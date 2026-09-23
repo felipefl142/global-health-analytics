@@ -16,10 +16,11 @@ from feast.types import Float32, String
 from config import settings
 
 COLUNAS_ANUAIS = [
-    "uhc_index", "life_expectancy", "child_mortality", "health_exp_per_capita",
-    "doctors_per_1000", "nurses_per_1000", "sanitation_basic", "water_basic",
-    "measles_imm_pct", "dpt_imm_pct", "gdp_per_capita", "fertility", "urban_pct",
-    "population",
+    "uhc_index", "life_expectancy", "child_mortality", "beds_per_1000", "doctors_per_1000",
+    "dpt_imm_pct", "fertility", "gdp_per_capita", "health_exp_gdp", "health_exp_per_capita",
+    "maternal_mortality", "measles_imm_pct", "ncd_mortality_30_70", "nurses_per_1000",
+    "out_of_pocket", "population", "public_health_exp_gdp", "sanitation_basic",
+    "sanitation_safely", "tb_incidence", "urban_pct", "water_basic", "water_safely",
 ]
 COLUNAS_ESTATICAS = ["region", "income_level"]
 TTL = timedelta(days=365 * 60)

@@ -3,7 +3,7 @@ PY      := .venv/bin/python
 UV      := .venv/bin/uvicorn
 ST      := .venv/bin/streamlit
 
-.PHONY: help install ingest silver gold abt features train abtest \
+.PHONY: help install ingest silver gold abt features analise train abtest \
         feast-up feast-materialize serve dashboard test lint drift all clean
 
 help:
@@ -28,6 +28,10 @@ abt: silver gold    ## Gera a camada gold/ABT completa
 
 features:           ## (re)constroi o proxy UHC e feature views
 	$(PY) -m src.features.uhc_index
+
+analise:            ## EDA + testes de hipotese (relatorios)
+	$(PY) -m src.analysis.eda
+	$(PY) -m src.analysis.hypotheses
 
 train:              ## Treina M1/M2/M3
 	$(PY) -m src.modeling.train
@@ -57,7 +61,7 @@ lint:               ## Lint (ruff)
 drift:              ## Monitoramento de drift
 	$(PY) -m src.monitoring.drift
 
-all: ingest silver gold train abtest   ## Pipeline completo (dados -> modelos -> experimentos)
+all: ingest silver gold analise train abtest drift   ## Pipeline completo (dados -> modelos -> experimentos -> drift)
 
 clean:              ## Remove camadas geradas e modelos
 	rm -rf data/bronze/* data/silver/* data/gold/* data/*.duckdb models/* .feast

@@ -4,18 +4,20 @@ Medallion pipeline over World Bank global-health panel data (country × year, 19
 
 ## Status (2026-09-23)
 
-- Branch `restart/deepseek`: recomeço do zero a partir de `56ea8b7`. **F0** (scaffolding) e **F1**
-  (ingestão) concluídos; F2–F12 pendentes.
-- Ingestão OK: 22 indicadores World Bank + 4 WHO GHO, sem erros (`data/bronze/ingest_log.json` e
+- Branch `restart/deepseek`: recomeço do zero a partir de `56ea8b7`. **F0–F12 concluídos**.
+- Ingestão: 22 indicadores World Bank + 4 WHO GHO, sem erros (`data/bronze/ingest_log.json` e
   `data/bronze/ingest_log_who.json`).
-- Códigos corrigidos: out-of-pocket = `SH.XPD.OOPC.CH.ZS` (o antigo `...TO.ZS` foi removido);
-  `SH_UHC_SCI` é **série anual 2000–2023** e é buscável (o `SH.UHC.NOEF` não existe). `per_page`
-  efetivo = 10000 (50000 gera HTTP 400).
+- Códigos: out-of-pocket = `SH.XPD.OOPC.CH.ZS` (o antigo `...TO.ZS` foi removido); `SH_UHC_SCI` é
+  **série anual 2000–2023** e é buscável (o `SH.UHC.NOEF` não existe). `per_page` = 10000.
+- `make all` reproduz dados + modelos + experimentos + drift; `make test` tem 31 testes (offline).
+- Serviços: Feast (sqlite/Redis), FastAPI (`make serve`), Streamlit (`make dashboard`), CI (ruff +
+  pytest + smoke) e monitoring de drift (PSI/KS).
 
 ## Commands (Makefile, all via `.venv`)
 
 - `make install` — creates venv and installs `requirements.txt` (requirements.txt is the dependency source of truth; pyproject has none).
-- Pipeline order matters: `make ingest` → `make silver` → `make gold` → `make train`. `make abt` = silver+gold only (no ingest dependency). `make all` currently stops at the unimplemented `abtest` step.
+- Pipeline order matters: `make ingest` → `make silver` → `make gold` → `make train`. `make abt` = silver+gold only (no ingest dependency). `make all` = ingest → silver → gold → analise → train → abtest → drift.
+- `make analise` (EDA + hipóteses) e `make drift` geram relatórios em `reports/` (versionados).
 - `make test` (pytest on `tests/`), `make lint` (ruff).
 - `make clean` is destructive: removes all generated data (`data/bronze|silver|gold/*`, `data/*.duckdb`) and `models/*`.
 - Run pipeline modules as `python -m src....` from the repo root. Imports like `from config import settings` rely on the repo root on sys.path (`config` has no `__init__.py`); `python src/.../file.py` will fail.
@@ -23,7 +25,9 @@ Medallion pipeline over World Bank global-health panel data (country × year, 19
   para `src.ingestion.who_gho`); add `--force` to refetch. Ingest is idempotent: existing
   `data/bronze/{worldbank,who}/{code}.json` is skipped, and per-indicator status is tracked in
   `data/bronze/ingest_log*.json` (check it first).
-- Redis (Feast online store) only when serving: `make redis-up` (docker compose).
+- Feast online store: default sqlite (`config/feast/feature_store.yaml`); Redis via `make redis-up`
+  (docker compose) trocando `online_store.type` para `redis`. `make feast-materialize` popula a
+  online store.
 
 ## Data flow
 
