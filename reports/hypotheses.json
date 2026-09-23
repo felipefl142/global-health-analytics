@@ -1,0 +1,124 @@
+[
+  {
+    "id": "H1",
+    "hipotese": "Mais medicos/1k associados a maior expectativa de vida (liquido de PIB/capita)",
+    "H0": "efeito <= 0 (esperado: +)",
+    "H1": "efeito > 0",
+    "teste": "PanelOLS FE pais+ano, SE cluster, controle log(PIB/cap)",
+    "efeito": -1.0942,
+    "unidade": "anos de LE por +1 DP de medicos/1k",
+    "ic95": [
+      -1.613,
+      -0.5753
+    ],
+    "p": 3.641638265561298e-05,
+    "n": 3824,
+    "significativo": true,
+    "significancia_pratica": true,
+    "veredito": "inconclusiva (sensivel a especificacao)",
+    "efeito_entity": 0.30490481979930606,
+    "p_entity": 0.15226864030507836
+  },
+  {
+    "id": "H2",
+    "hipotese": "Paises com saneamento basico > 80% tem mortalidade <5 menor",
+    "H0": "efeito <= 0 (esperado: -)",
+    "H1": "efeito < 0",
+    "teste": "t-test de Welch + Mann-Whitney",
+    "efeito": -57.6439,
+    "unidade": "mortes/1k (dif. de medias)",
+    "ic95": [
+      -59.6807,
+      -55.607
+    ],
+    "p": 0.0,
+    "n": 4536,
+    "significativo": true,
+    "significancia_pratica": true,
+    "veredito": "suportada",
+    "p_mannwhitney": 0.0,
+    "media_gt80": 12.8,
+    "media_le80": 70.45
+  },
+  {
+    "id": "H3",
+    "hipotese": "+1 DP no gasto publico em saude (% PIB) eleva a expectativa de vida",
+    "H0": "efeito <= 0 (esperado: +)",
+    "H1": "efeito > 0",
+    "teste": "PanelOLS FE pais+ano, SE cluster",
+    "efeito": -0.53,
+    "unidade": "anos de LE por +1 DP",
+    "ic95": [
+      -0.9717,
+      -0.0883
+    ],
+    "p": 0.018699595903769684,
+    "n": 4540,
+    "significativo": true,
+    "significancia_pratica": true,
+    "veredito": "inconclusiva (sensivel a especificacao)",
+    "efeito_entity": 1.5258795548794122,
+    "p_entity": 1.2551276786787469e-06
+  },
+  {
+    "id": "H4",
+    "hipotese": "Maior urbanizacao associada a menor mortalidade <5",
+    "H0": "efeito <= 0 (esperado: -)",
+    "H1": "efeito < 0",
+    "teste": "PanelOLS FE pais+ano, SE cluster",
+    "efeito": -28.3545,
+    "unidade": "mortes/1k por +1 DP de urbanizacao",
+    "ic95": [
+      -40.5752,
+      -16.1339
+    ],
+    "p": 5.504848461512779e-06,
+    "n": 6664,
+    "significativo": true,
+    "significancia_pratica": true,
+    "veredito": "suportada",
+    "efeito_entity": -67.57397920658065,
+    "p_entity": 0.0
+  },
+  {
+    "id": "H5",
+    "hipotese": "Apos cruzar o limiar UHC (0.5) ate 2010, o ganho de LE acelera (DiD 2x2)",
+    "H0": "efeito <= 0 (esperado: +)",
+    "H1": "efeito > 0",
+    "teste": "DiD two-way FE (pais+ano), SE cluster",
+    "efeito": -2.8584,
+    "unidade": "anos de LE (efeito DiD)",
+    "ic95": [
+      -3.7673,
+      -1.9494
+    ],
+    "p": 7.621949738023659e-10,
+    "n": 4933,
+    "significativo": true,
+    "significancia_pratica": true,
+    "veredito": "rejeitada (sinal oposto)",
+    "n_tratados": 110,
+    "n_controles": 62,
+    "observacao": "Resultado negativo sugere convergencia: paises nunca tratados (mais pobres) ganharam LE mais rapido no periodo."
+  },
+  {
+    "id": "H6",
+    "hipotese": "Maior cobertura de sarampo associada a menor mortalidade <5",
+    "H0": "efeito <= 0 (esperado: -)",
+    "H1": "efeito < 0",
+    "teste": "PanelOLS FE pais+ano, SE cluster",
+    "efeito": -11.0048,
+    "unidade": "mortes/1k por +1 DP de cobertura",
+    "ic95": [
+      -14.6222,
+      -7.3873
+    ],
+    "p": 2.601683757319506e-09,
+    "n": 6424,
+    "significativo": true,
+    "significancia_pratica": true,
+    "veredito": "suportada",
+    "efeito_entity": -19.109444923523082,
+    "p_entity": 0.0
+  }
+]
