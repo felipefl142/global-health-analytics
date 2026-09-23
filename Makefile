@@ -3,7 +3,7 @@ PY      := .venv/bin/python
 UV      := .venv/bin/uvicorn
 ST      := .venv/bin/streamlit
 
-.PHONY: help install ingest silver gold abt features train abtest \
+.PHONY: help install ingest silver gold abt features train abtest hypotheses notebooks \
         feast-up feast-materialize serve dashboard test lint drift all clean
 
 help:
@@ -37,6 +37,12 @@ abtest:             ## A/B simulado + causal DiD
 	$(PY) -m src.abtesting.simulate_ab
 	$(PY) -m src.abtesting.causal_did
 
+hypotheses:         ## Testes de hipotese H1-H6 -> reports/hypotheses.json
+	$(PY) -m src.analysis.hypotheses
+
+notebooks:          ## Gera e executa os notebooks 01-05 (com outputs)
+	$(PY) notebooks/build_notebooks.py
+
 redis-up:           ## Sobe Redis (online store) via docker-compose
 	docker compose up -d redis
 
@@ -58,7 +64,7 @@ lint:               ## Lint (ruff)
 drift:              ## Monitoramento de drift
 	$(PY) -m src.monitoring.drift
 
-all: ingest silver gold train abtest   ## Pipeline completo (dados -> modelos -> experimentos)
+all: ingest silver gold train abtest hypotheses   ## Pipeline completo (dados -> modelos -> experimentos)
 
 clean:              ## Remove camadas geradas e modelos
 	rm -rf data/bronze/* data/silver/* data/gold/* data/*.duckdb models/* .feast

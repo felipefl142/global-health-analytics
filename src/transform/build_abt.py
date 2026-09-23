@@ -83,6 +83,7 @@ def quality_report(abt: pd.DataFrame) -> dict:
             "threshold": DID_THRESHOLD,
             "treated_countries": int(abt.loc[abt["treated"], "country_id"].nunique()),
             "always_treated_countries": int(abt.loc[abt["always_treated"], "country_id"].nunique()),
+            "never_treated_countries": int(abt.loc[abt["never_treated"], "country_id"].nunique()),
         },
     }
 

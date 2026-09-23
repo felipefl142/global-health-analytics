@@ -1,0 +1,121 @@
+{
+  "design": {
+    "unit": "country",
+    "snapshot_year": 2019,
+    "pre_year": 2015,
+    "uplift": 0.2,
+    "seed": 42,
+    "n_countries": 193,
+    "noise": "residuos de teste reamostrados"
+  },
+  "outcomes": {
+    "life_expectancy": {
+      "n_treat": 96,
+      "n_control": 97,
+      "mean_treat": 72.8832663923372,
+      "mean_control": 72.14970406860934,
+      "diff": 0.7335623237278668,
+      "ci95": [
+        -1.6514469721591225,
+        3.118571619614856
+      ],
+      "p": 0.5447863814984208,
+      "cohens_d": 0.08732420038345616,
+      "cuped": {
+        "theta": 0.8976451031752283,
+        "diff": 0.34389570875296727,
+        "ci95": [
+          -0.7597702667440607,
+          1.4475616842499952
+        ],
+        "p": 0.5395170184159945,
+        "n": 193,
+        "variance_reduction": 0.7856700644024056
+      },
+      "true_effect_model": 1.1836553812026978,
+      "power": {
+        "n_per_arm": 96,
+        "mde_cohens_d": 0.40643174717876257,
+        "mde_abs": 3.408583831050691,
+        "achieved_power": 0.1634812197509279,
+        "n_per_arm_for_80pct_power": 790,
+        "mde_abs_cuped": 1.5780305120949047
+      },
+      "higher_is_better": true,
+      "p_holm": 0.8736200924354866,
+      "significant_holm": false
+    },
+    "child_mortality": {
+      "n_treat": 96,
+      "n_control": 97,
+      "mean_treat": 21.373928106824554,
+      "mean_control": 28.42073659552742,
+      "diff": -7.046808488702865,
+      "ci95": [
+        -17.07178760067001,
+        2.9781706232642797
+      ],
+      "p": 0.16713694929965395,
+      "cohens_d": -0.19941013894495332,
+      "cuped": {
+        "theta": 0.6830309726802551,
+        "diff": -4.516733257490543,
+        "ci95": [
+          -12.054393929124373,
+          3.020927414143287
+        ],
+        "p": 0.23835057020477038,
+        "n": 193,
+        "variance_reduction": 0.43609515015466704
+      },
+      "true_effect_model": -5.215310096740723,
+      "power": {
+        "n_per_arm": 96,
+        "mde_cohens_d": 0.40643174717876257,
+        "mde_abs": 14.396909409982927,
+        "achieved_power": 0.17377725838685448,
+        "n_per_arm_for_80pct_power": 726,
+        "mde_abs_cuped": 10.811157313056663
+      },
+      "higher_is_better": false,
+      "p_holm": 0.7150517106143112,
+      "significant_holm": false
+    },
+    "milestone_prob": {
+      "n_treat": 96,
+      "n_control": 97,
+      "mean_treat": 0.21181816076134888,
+      "mean_control": 0.21483791465842159,
+      "diff": -0.003019753897072708,
+      "ci95": [
+        -0.11148064884865891,
+        0.10544114105451349
+      ],
+      "p": 0.95626192970061,
+      "cohens_d": -0.007905167694570076,
+      "cuped": {
+        "theta": 0.8626999322838828,
+        "diff": 0.022272028911507646,
+        "ci95": [
+          -0.03415593850639887,
+          0.07869999632941416
+        ],
+        "p": 0.4368100462177433,
+        "n": 193,
+        "variance_reduction": 0.730524846972572
+      },
+      "true_effect_model": 0.060105349868535995,
+      "power": {
+        "n_per_arm": 96,
+        "mde_cohens_d": 0.40643174717876257,
+        "mde_abs": 0.15485227301369,
+        "achieved_power": 0.19261537971702733,
+        "n_per_arm_for_80pct_power": 632,
+        "mde_abs_cuped": 0.08038535761639605
+      },
+      "higher_is_better": true,
+      "p_holm": 0.8736200924354866,
+      "significant_holm": false
+    }
+  }
+}

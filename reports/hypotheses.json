@@ -1,0 +1,349 @@
+[
+  {
+    "id": "H1",
+    "title": "Densidade de medicos => expectativa de vida (liquido de PIB)",
+    "h0": "Coeficiente de medicos/1000 sobre LE = 0 (dentro do pais, dado PIB)",
+    "h1": "Mais medicos/1000 => maior LE",
+    "test": "PanelOLS FE pais+ano, controle log(PIB/cap), SE cluster pais",
+    "effect": -1.0902986195043765,
+    "effect_unit": "anos por +1 DP de medicos/1000",
+    "ci95": [
+      -1.6073540379165685,
+      -0.5732432010921844
+    ],
+    "p": 3.641638265561298e-05,
+    "n": 3824,
+    "min_relevant_effect": 0.5,
+    "expected_sign": 1,
+    "extra": {
+      "sd_x": 1.5310873591224736,
+      "n_countries": 198,
+      "r2_within": 0.1667414107709554,
+      "robustness": {
+        "pooled_between_within": {
+          "coef": 1.7559405931965026,
+          "ci95": [
+            1.1566772178536269,
+            2.3552039685393784
+          ],
+          "p": 9.924093324897854e-09,
+          "n": 3824
+        },
+        "fe_sem_europa_asia_central": {
+          "coef": -1.4964434724066584,
+          "ci95": [
+            -2.065349702804732,
+            -0.9275372420085847
+          ],
+          "p": 2.723393184300704e-07,
+          "n": 2289
+        }
+      }
+    },
+    "p_holm": 0.00010924914796683893,
+    "verdict": "Rejeita H0 - efeito na direcao OPOSTA a H1"
+  },
+  {
+    "id": "H2",
+    "title": "Saneamento basico > 80% => mortalidade <5 menor",
+    "h0": "Distribuicao da mortalidade <5 igual entre paises com saneamento > 80% e <= 80%",
+    "h1": "Paises com saneamento > 80% tem mortalidade <5 menor",
+    "test": "Mann-Whitney (snapshot 2019) + IC bootstrap da dif. de medianas",
+    "effect": -43.1,
+    "effect_unit": "mortes/1000 nascidos (dif. de medianas)",
+    "ci95": [
+      -49.0,
+      -35.8
+    ],
+    "p": 1.3140220717593372e-25,
+    "n": 186,
+    "min_relevant_effect": 5.0,
+    "expected_sign": -1,
+    "extra": {
+      "n_high": 119,
+      "n_low": 67,
+      "median_high": 8.5,
+      "median_low": 51.6,
+      "cliffs_delta": -0.9249968644174088,
+      "adjusted_gdp": {
+        "coef": -25.087708054404864,
+        "ci95": [
+          -32.541050366574865,
+          -17.634365742234866
+        ],
+        "p": 4.190657535926206e-11
+      }
+    },
+    "p_holm": 7.884132430556023e-25,
+    "verdict": "Rejeita H0 - efeito relevante"
+  },
+  {
+    "id": "H3",
+    "title": "+1 DP no gasto publico em saude => delta na expectativa de vida",
+    "h0": "Coeficiente do gasto publico em saude (% PIB) sobre LE = 0",
+    "h1": "Mais gasto publico => maior LE",
+    "test": "PanelOLS FE pais+ano, controle log(PIB/cap), SE cluster pais",
+    "effect": -0.4311350244008666,
+    "effect_unit": "anos por +1 DP de gasto publico (% PIB)",
+    "ci95": [
+      -0.836986751981382,
+      -0.025283296820351242
+    ],
+    "p": 0.037342119691855746,
+    "n": 4512,
+    "min_relevant_effect": 0.5,
+    "expected_sign": 1,
+    "extra": {
+      "sd_x": 2.3862877832864293,
+      "n_countries": 192,
+      "r2_within": 0.15053727471997225,
+      "robustness": {
+        "pooled_between_within": {
+          "coef": 0.5440584054504604,
+          "ci95": [
+            -0.37727855619558215,
+            1.465395367096503
+          ],
+          "p": 0.24705216605973512,
+          "n": 4512
+        },
+        "fe_sem_europa_asia_central": {
+          "coef": -0.38915484994135274,
+          "ci95": [
+            -0.8356938888659464,
+            0.057384188983240936
+          ],
+          "p": 0.0875959689447825,
+          "n": 3290
+        }
+      }
+    },
+    "p_holm": 0.07468423938371149,
+    "verdict": "Nao rejeita H0"
+  },
+  {
+    "id": "H4",
+    "title": "Urbanizacao associada a mortalidade <5 menor",
+    "h0": "Coeficiente da urbanizacao sobre mortalidade <5 = 0",
+    "h1": "Mais urbanizacao => menor mortalidade <5",
+    "test": "PanelOLS FE pais+ano, controle log(PIB/cap), SE cluster pais",
+    "effect": -27.61138036849652,
+    "effect_unit": "mortes/1000 por +1 DP de urbanizacao",
+    "ci95": [
+      -39.210875402475125,
+      -16.011885334517913
+    ],
+    "p": 3.129310448546363e-06,
+    "n": 6471,
+    "min_relevant_effect": 5.0,
+    "expected_sign": -1,
+    "extra": {
+      "sd_x": 23.233714938094842,
+      "n_countries": 194,
+      "r2_within": 0.3152726945493962,
+      "robustness": {
+        "pooled_between_within": {
+          "coef": -4.352160858836025,
+          "ci95": [
+            -9.525959959833099,
+            0.8216382421610486
+          ],
+          "p": 0.09919294065856077,
+          "n": 6471
+        },
+        "fe_sem_europa_asia_central": {
+          "coef": -24.972292720359864,
+          "ci95": [
+            -39.76790836940546,
+            -10.176677071314268
+          ],
+          "p": 0.0009437548579613875,
+          "n": 4753
+        }
+      }
+    },
+    "p_holm": 1.2517241794185452e-05,
+    "verdict": "Rejeita H0 - efeito relevante"
+  },
+  {
+    "id": "H5",
+    "title": "Apos cruzar o limiar UHC, a expectativa de vida acelera (DiD)",
+    "h0": "ATT da adocao (proxy UHC >= 0.5) sobre a expectativa de vida = 0",
+    "h1": "ATT > 0 (ganho de expectativa de vida apos cruzar o limiar)",
+    "test": "DiD escalonado por coorte (controle nunca-tratado), ajuste de tendencia linear, bootstrap de paises",
+    "effect": 0.07063103819758178,
+    "effect_unit": "anos (ATT medio pos-adocao)",
+    "ci95": [
+      -0.5043379463984324,
+      0.6082501119303741
+    ],
+    "p": 0.7839195979899497,
+    "n": 99,
+    "min_relevant_effect": 0.5,
+    "expected_sign": 1,
+    "extra": {
+      "n_treated": 37,
+      "n_never": 62,
+      "event_study": [
+        {
+          "e": -6,
+          "att": 0.00728449332751302,
+          "ci95": [
+            -0.08352754611363118,
+            0.09614882196842484
+          ]
+        },
+        {
+          "e": -5,
+          "att": -0.018497869876004658,
+          "ci95": [
+            -0.11954402528783527,
+            0.06092666454975979
+          ]
+        },
+        {
+          "e": -4,
+          "att": 0.055991959395158386,
+          "ci95": [
+            -0.043142245343857445,
+            0.16564210736356938
+          ]
+        },
+        {
+          "e": -3,
+          "att": 0.013350623981055021,
+          "ci95": [
+            -0.085978770360236,
+            0.15041303106579323
+          ]
+        },
+        {
+          "e": -2,
+          "att": -0.15710811328113655,
+          "ci95": [
+            -0.3615547188609547,
+            0.02118747336199292
+          ]
+        },
+        {
+          "e": 0,
+          "att": 0.19143256723611535,
+          "ci95": [
+            -0.03487146358021387,
+            0.46065130374979407
+          ]
+        },
+        {
+          "e": 1,
+          "att": 0.19660389568086184,
+          "ci95": [
+            -0.08974910181158546,
+            0.52061592571477
+          ]
+        },
+        {
+          "e": 2,
+          "att": 0.16064130591135561,
+          "ci95": [
+            -0.3237223343292437,
+            0.6150068749241918
+          ]
+        },
+        {
+          "e": 3,
+          "att": 0.17806798870190532,
+          "ci95": [
+            -0.22068309763407976,
+            0.6505720635015286
+          ]
+        },
+        {
+          "e": 4,
+          "att": 0.09354334738361558,
+          "ci95": [
+            -0.5016090179116506,
+            0.6823661456979027
+          ]
+        },
+        {
+          "e": 5,
+          "att": -0.10848783655324157,
+          "ci95": [
+            -0.8391152057012646,
+            0.7142076775279559
+          ]
+        },
+        {
+          "e": 6,
+          "att": -0.08757940302544087,
+          "ci95": [
+            -1.0233522739750485,
+            0.8439935155202877
+          ]
+        },
+        {
+          "e": 7,
+          "att": -0.025331999640971548,
+          "ci95": [
+            -1.139510876255679,
+            1.0468643028172213
+          ]
+        },
+        {
+          "e": 8,
+          "att": -0.08367127117205486,
+          "ci95": [
+            -1.1547492871710971,
+            0.9016614474284549
+          ]
+        }
+      ]
+    },
+    "p_holm": 0.7839195979899497,
+    "verdict": "Nao rejeita H0"
+  },
+  {
+    "id": "H6",
+    "title": "Vacinacao contra sarampo associada a mortalidade <5 menor",
+    "h0": "Coeficiente da vacinacao (sarampo) sobre mortalidade <5 = 0",
+    "h1": "Mais vacinacao => menor mortalidade <5",
+    "test": "PanelOLS FE pais+ano, controle log(PIB/cap), SE cluster pais",
+    "effect": -10.344530757520529,
+    "effect_unit": "mortes/1000 por +1 DP de cobertura vacinal",
+    "ci95": [
+      -13.917232351527272,
+      -6.771829163513786
+    ],
+    "p": 1.4415435511949681e-08,
+    "n": 6334,
+    "min_relevant_effect": 5.0,
+    "expected_sign": -1,
+    "extra": {
+      "sd_x": 16.391660149717598,
+      "n_countries": 192,
+      "r2_within": 0.28139230912474034,
+      "robustness": {
+        "pooled_between_within": {
+          "coef": -21.108695659197352,
+          "ci95": [
+            -25.181915898205887,
+            -17.035475420188817
+          ],
+          "p": 0.0,
+          "n": 6334
+        },
+        "fe_sem_europa_asia_central": {
+          "coef": -11.676265595592437,
+          "ci95": [
+            -15.855078966209964,
+            -7.497452224974909
+          ],
+          "p": 4.537555708949981e-08,
+          "n": 4688
+        }
+      }
+    },
+    "p_holm": 7.20771775597484e-08,
+    "verdict": "Rejeita H0 - efeito relevante"
+  }
+]

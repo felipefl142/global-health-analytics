@@ -43,6 +43,7 @@ DID_THRESHOLD = 0.5
 # Gasto/saneamento/agua so existem a partir de 2000: antes disso a composicao do indice
 # muda e gera "cruzamentos" artificiais. O timing do tratamento so considera >= 2000.
 DID_START_YEAR = 2000
+MIN_OBS_SHARE = 0.5  # fracao minima de anos com proxy p/ um pais ser controle nunca-tratado
 
 
 def _robust_minmax(s: pd.Series, lo: float = LO, hi: float = HI) -> pd.Series:
@@ -108,12 +109,18 @@ def treatment_timing(abt: pd.DataFrame, threshold: float = DID_THRESHOLD,
       treat_year (float) - primeiro ano >= limiar apos periodo pre (ou NaN)
       treated (bool)     - tem treat_year
       always_treated (bool)
+      never_treated (bool) - observado em >= MIN_OBS_SHARE dos anos da janela e nunca cruzou
+                             (pais sem dado de insumos NAO e controle valido)
       post (int)         - 1 se treated e ano >= treat_year
     """
     out = abt.copy()
     treat_year: dict = {}
     always: dict = {}
     window = out[out["year"] >= start_year].dropna(subset=[col])
+    n_window_years = out.loc[out["year"] >= start_year, "year"].nunique()
+    well_observed = set(
+        window.groupby("country_id")["year"].nunique()
+        .loc[lambda s: s >= MIN_OBS_SHARE * n_window_years].index)
     for cid, g in window.groupby("country_id"):
         g = g.sort_values("year")
         above = g[col] >= threshold
@@ -125,6 +132,8 @@ def treatment_timing(abt: pd.DataFrame, threshold: float = DID_THRESHOLD,
     out["treat_year"] = out["country_id"].map(treat_year).astype(float)
     out["treated"] = out["treat_year"].notna()
     out["always_treated"] = out["country_id"].isin(always)
+    out["never_treated"] = (out["country_id"].isin(well_observed) & ~out["treated"]
+                            & ~out["always_treated"])
     out["post"] = np.where(out["treated"] & (out["year"] >= out["treat_year"]), 1, 0)
     return out
 
