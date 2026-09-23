@@ -1,0 +1,362 @@
+{
+  "cobertura": {
+    "rows": 7378,
+    "countries": 217,
+    "year_min": 1990,
+    "year_max": 2023,
+    "n_regions": 7,
+    "coverage": {
+      "life_expectancy": {
+        "n": 7378,
+        "missing_rate": 0.0
+      },
+      "child_mortality": {
+        "n": 6664,
+        "missing_rate": 0.0968
+      },
+      "uhc_index": {
+        "n": 5564,
+        "missing_rate": 0.2459
+      },
+      "uhc_sci": {
+        "n": 4632,
+        "missing_rate": 0.3722
+      },
+      "health_exp_per_capita": {
+        "n": 4537,
+        "missing_rate": 0.3851
+      },
+      "gdp_per_capita": {
+        "n": 7015,
+        "missing_rate": 0.0492
+      },
+      "doctors_per_1000": {
+        "n": 3876,
+        "missing_rate": 0.4747
+      },
+      "nurses_per_1000": {
+        "n": 3410,
+        "missing_rate": 0.5378
+      },
+      "beds_per_1000": {
+        "n": 3751,
+        "missing_rate": 0.4916
+      },
+      "sanitation_basic": {
+        "n": 4973,
+        "missing_rate": 0.326
+      },
+      "water_basic": {
+        "n": 5007,
+        "missing_rate": 0.3214
+      },
+      "measles_imm_pct": {
+        "n": 6424,
+        "missing_rate": 0.1293
+      },
+      "dpt_imm_pct": {
+        "n": 6432,
+        "missing_rate": 0.1282
+      },
+      "urban_pct": {
+        "n": 7378,
+        "missing_rate": 0.0
+      },
+      "fertility": {
+        "n": 7378,
+        "missing_rate": 0.0
+      },
+      "population": {
+        "n": 7378,
+        "missing_rate": 0.0
+      }
+    }
+  },
+  "missing_por_renda": {
+    "life_expectancy": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.0
+    },
+    "child_mortality": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.2442
+    },
+    "uhc_index": {
+      "Low income": 0.18,
+      "Lower middle income": 0.1564,
+      "Upper middle income": 0.1645,
+      "High income": 0.3697
+    },
+    "uhc_sci": {
+      "Low income": 0.2941,
+      "Lower middle income": 0.2941,
+      "Upper middle income": 0.3061,
+      "High income": 0.4829
+    },
+    "health_exp_per_capita": {
+      "Low income": 0.36,
+      "Lower middle income": 0.3135,
+      "Upper middle income": 0.3156,
+      "High income": 0.4791
+    },
+    "gdp_per_capita": {
+      "Low income": 0.1071,
+      "Lower middle income": 0.0025,
+      "Upper middle income": 0.0165,
+      "High income": 0.0804
+    },
+    "doctors_per_1000": {
+      "Low income": 0.5741,
+      "Lower middle income": 0.5676,
+      "Upper middle income": 0.4207,
+      "High income": 0.4319
+    },
+    "nurses_per_1000": {
+      "Low income": 0.6612,
+      "Lower middle income": 0.6464,
+      "Upper middle income": 0.484,
+      "High income": 0.4795
+    },
+    "beds_per_1000": {
+      "Low income": 0.7282,
+      "Lower middle income": 0.6039,
+      "Upper middle income": 0.3988,
+      "High income": 0.4251
+    },
+    "sanitation_basic": {
+      "Low income": 0.3176,
+      "Lower middle income": 0.3123,
+      "Upper middle income": 0.3255,
+      "High income": 0.3362
+    },
+    "water_basic": {
+      "Low income": 0.3153,
+      "Lower middle income": 0.3116,
+      "Upper middle income": 0.3265,
+      "High income": 0.3249
+    },
+    "measles_imm_pct": {
+      "Low income": 0.0494,
+      "Lower middle income": 0.0138,
+      "Upper middle income": 0.0364,
+      "High income": 0.2794
+    },
+    "dpt_imm_pct": {
+      "Low income": 0.0494,
+      "Lower middle income": 0.0138,
+      "Upper middle income": 0.0364,
+      "High income": 0.2767
+    },
+    "urban_pct": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.0
+    },
+    "fertility": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.0
+    },
+    "population": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.0
+    }
+  },
+  "correlacoes_alvo": {
+    "life_expectancy": {
+      "life_expectancy": 1.0,
+      "child_mortality": -0.911,
+      "uhc_index": 0.84,
+      "uhc_sci": 0.855,
+      "health_exp_per_capita": 0.576,
+      "gdp_per_capita": 0.568,
+      "doctors_per_1000": 0.641,
+      "nurses_per_1000": 0.569,
+      "beds_per_1000": 0.257,
+      "sanitation_basic": 0.847,
+      "water_basic": 0.813,
+      "measles_imm_pct": 0.636,
+      "dpt_imm_pct": 0.657,
+      "urban_pct": 0.635,
+      "fertility": -0.837,
+      "population": 0.005
+    },
+    "child_mortality": {
+      "life_expectancy": -0.911,
+      "child_mortality": 1.0,
+      "uhc_index": -0.804,
+      "uhc_sci": -0.85,
+      "health_exp_per_capita": -0.4,
+      "gdp_per_capita": -0.388,
+      "doctors_per_1000": -0.568,
+      "nurses_per_1000": -0.499,
+      "beds_per_1000": -0.323,
+      "sanitation_basic": -0.83,
+      "water_basic": -0.837,
+      "measles_imm_pct": -0.695,
+      "dpt_imm_pct": -0.725,
+      "urban_pct": -0.581,
+      "fertility": 0.842,
+      "population": -0.004
+    }
+  },
+  "outliers": [
+    {
+      "indicator": "life_expectancy",
+      "q1": 64.014,
+      "q3": 76.423,
+      "lower": 45.4,
+      "upper": 95.036,
+      "outliers": 99,
+      "outlier_rate": 0.0134
+    },
+    {
+      "indicator": "child_mortality",
+      "q1": 10.2,
+      "q3": 62.15,
+      "lower": -67.725,
+      "upper": 140.075,
+      "outliers": 443,
+      "outlier_rate": 0.0665
+    },
+    {
+      "indicator": "uhc_index",
+      "q1": 0.312,
+      "q3": 0.696,
+      "lower": -0.263,
+      "upper": 1.272,
+      "outliers": 0,
+      "outlier_rate": 0.0
+    },
+    {
+      "indicator": "uhc_sci",
+      "q1": 49.0,
+      "q3": 78.0,
+      "lower": 5.5,
+      "upper": 121.5,
+      "outliers": 0,
+      "outlier_rate": 0.0
+    },
+    {
+      "indicator": "health_exp_per_capita",
+      "q1": 64.678,
+      "q3": 899.595,
+      "lower": -1187.698,
+      "upper": 2151.97,
+      "outliers": 632,
+      "outlier_rate": 0.1393
+    },
+    {
+      "indicator": "gdp_per_capita",
+      "q1": 1150.416,
+      "q3": 17213.865,
+      "lower": -22944.759,
+      "upper": 41309.04,
+      "outliers": 657,
+      "outlier_rate": 0.0937
+    },
+    {
+      "indicator": "doctors_per_1000",
+      "q1": 0.544,
+      "q3": 3.17,
+      "lower": -3.396,
+      "upper": 7.109,
+      "outliers": 20,
+      "outlier_rate": 0.0052
+    },
+    {
+      "indicator": "nurses_per_1000",
+      "q1": 1.593,
+      "q3": 7.043,
+      "lower": -6.582,
+      "upper": 15.219,
+      "outliers": 56,
+      "outlier_rate": 0.0164
+    },
+    {
+      "indicator": "beds_per_1000",
+      "q1": 1.6,
+      "q3": 5.525,
+      "lower": -4.287,
+      "upper": 11.412,
+      "outliers": 123,
+      "outlier_rate": 0.0328
+    },
+    {
+      "indicator": "sanitation_basic",
+      "q1": 53.663,
+      "q3": 98.059,
+      "lower": -12.93,
+      "upper": 164.653,
+      "outliers": 0,
+      "outlier_rate": 0.0
+    },
+    {
+      "indicator": "water_basic",
+      "q1": 80.832,
+      "q3": 99.328,
+      "lower": 53.087,
+      "upper": 127.073,
+      "outliers": 404,
+      "outlier_rate": 0.0807
+    },
+    {
+      "indicator": "measles_imm_pct",
+      "q1": 76.0,
+      "q3": 96.0,
+      "lower": 46.0,
+      "upper": 126.0,
+      "outliers": 252,
+      "outlier_rate": 0.0392
+    },
+    {
+      "indicator": "dpt_imm_pct",
+      "q1": 79.0,
+      "q3": 96.0,
+      "lower": 53.5,
+      "upper": 121.5,
+      "outliers": 463,
+      "outlier_rate": 0.072
+    },
+    {
+      "indicator": "urban_pct",
+      "q1": 37.242,
+      "q3": 77.428,
+      "lower": -23.036,
+      "upper": 137.706,
+      "outliers": 0,
+      "outlier_rate": 0.0
+    },
+    {
+      "indicator": "fertility",
+      "q1": 1.727,
+      "q3": 4.047,
+      "lower": -1.752,
+      "upper": 7.527,
+      "outliers": 51,
+      "outlier_rate": 0.0069
+    },
+    {
+      "indicator": "population",
+      "q1": 630587.25,
+      "q3": 19193197.75,
+      "lower": -27213328.5,
+      "upper": 47037113.5,
+      "outliers": 898,
+      "outlier_rate": 0.1217
+    }
+  ],
+  "validacao_uhc": {
+    "n": 4608,
+    "pearson": 0.8979,
+    "spearman": 0.8888
+  }
+}
