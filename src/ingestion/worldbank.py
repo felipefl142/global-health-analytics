@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 
 import requests
 
@@ -87,10 +88,12 @@ def fetch_indicator(code: str, cfg: dict) -> tuple[dict, list]:
     return meta, records
 
 
-def ingest_worldbank(codes: list[str] | None = None, force: bool = False) -> tuple[list, list]:
+def ingest_worldbank(codes: list[str] | None = None, force: bool = False,
+                     with_countries: bool = True) -> tuple[list, list]:
     """Executa a ingestao e devolve (log, erros).
 
-    `codes` filtra por codigo WB ou nome logico (ambos aceitos).
+    `codes` filtra por codigo WB ou nome logico (ambos aceitos). Os metadados de
+    paises (regiao/renda) so sao baixados em execucoes completas.
     """
     cfg = settings.load_indicators()
     settings.ensure_dirs()
@@ -136,12 +139,49 @@ def ingest_worldbank(codes: list[str] | None = None, force: bool = False) -> tup
             log.append({"name": name, "code": code, "status": "error", "error": str(exc)})
             print(f"[erro] {code} ({name}): {exc}")
 
+    if with_countries:
+        try:
+            meta_file = fetch_countries(cfg, force=force)
+            log.append({"name": "countries", "code": "_countries", "status": "ok",
+                        "file": str(meta_file)})
+        except Exception as exc:  # noqa: BLE001
+            log.append({"name": "countries", "code": "_countries", "status": "error",
+                        "error": str(exc)})
+            print(f"[erro] _countries: {exc}")
+
     write_json(
         settings.BRONZE_DIR / "ingest_log.json",
         {"generated_at": _now(), "source": "worldbank", "indicators": log},
     )
     errors = [item for item in log if item["status"] == "error"]
     return log, errors
+
+
+def fetch_countries(cfg: dict, force: bool = False) -> Path:
+    """Baixa os metadados de paises (regiao/renda/coordenadas) -> bronze/_countries.json."""
+    target = settings.BRONZE_DIR / "worldbank" / "_countries.json"
+    if target.exists() and not force:
+        print("[skip] _countries (metadados de paises)")
+        return target
+
+    url = f"{settings.WB_API_BASE}/country"
+    last_error: Exception | None = None
+    for attempt in range(settings.WB_RETRIES + 1):
+        try:
+            resp = requests.get(url, params={"format": "json", "per_page": 400}, timeout=60)
+            resp.raise_for_status()
+            payload = resp.json()
+            if _is_api_error(payload):
+                raise ValueError(_error_message(payload))
+            rows = payload[1] or []
+            write_json(target, {"fetched_at": _now(), "data": rows})
+            print(f"[ok]   _countries: {len(rows)} paises")
+            return target
+        except (requests.RequestException, ValueError) as exc:
+            last_error = exc
+            if attempt < settings.WB_RETRIES:
+                time.sleep(settings.WB_API_DELAY * (2 ** attempt))
+    raise RuntimeError(f"falha ao baixar metadados de paises: {last_error}")
 
 
 def main(argv: list[str] | None = None) -> int:

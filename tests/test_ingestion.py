@@ -48,13 +48,13 @@ def test_ingest_worldbank_idempotente(tmp_path, monkeypatch):
 
     monkeypatch.setattr(worldbank, "fetch_indicator", fake_fetch)
 
-    log, erros = worldbank.ingest_worldbank()
+    log, erros = worldbank.ingest_worldbank(with_countries=False)
     assert not erros
     assert all(x["status"] == "ok" for x in log)
     assert (tmp_path / "bronze" / "worldbank" / "SP.DYN.LE00.IN.json").exists()
     assert (tmp_path / "bronze" / "ingest_log.json").exists()
 
-    log2, erros2 = worldbank.ingest_worldbank()
+    log2, erros2 = worldbank.ingest_worldbank(with_countries=False)
     assert not erros2
     assert all(x["status"] == "skipped" for x in log2)
 
