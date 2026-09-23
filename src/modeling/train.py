@@ -122,6 +122,12 @@ def train_one(target: str) -> dict:
         p_test = model.predict(md.X_test)
         report["xgb"] = {"valid": _eval_regr(md.y_valid, p_valid),
                           "test": _eval_regr(md.y_test, p_test)}
+        # intervalo de predicao conformal (split): quantil 90% do |residuo| no valid;
+        # cobertura empirica medida no test (anos 2020+, fora da distribuicao do valid)
+        q90 = float(np.quantile(np.abs(md.y_valid - p_valid), 0.9))
+        report["xgb"]["interval_q90"] = round(q90, 4)
+        report["xgb"]["interval_coverage_test"] = round(
+            float(np.mean(np.abs(md.y_test - p_test) <= q90)), 3)
     else:
         p_valid = model.predict_proba(md.X_valid)[:, 1]
         p_test = model.predict_proba(md.X_test)[:, 1]
