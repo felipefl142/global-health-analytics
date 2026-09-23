@@ -1,0 +1,9 @@
+project: global_health
+provider: local
+registry: ../../.feast/registry.db
+online_store:
+    type: sqlite
+    path: ../../.feast/online.db
+offline_store:
+    type: file
+entity_key_serialization_version: 3
