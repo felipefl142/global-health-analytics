@@ -14,14 +14,16 @@ install:            ## Cria venv e instala dependencias
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r requirements.txt
 
-ingest:             ## Ingestao World Bank API -> bronze
+ingest:             ## Ingestao World Bank API + WHO GHO -> bronze
 	$(PY) -m src.ingestion.worldbank
+	$(PY) -m src.ingestion.who_gho
 
 silver:             ## bronze -> silver (limpo/estandarizado)
 	$(PY) -m src.transform.bronze_to_silver
 
-gold:               ## silver -> gold (ABT + proxy UHC)
+gold:               ## silver -> gold (ABT + proxy UHC) + checks de qualidade
 	$(PY) -m src.transform.build_abt
+	$(PY) -m src.transform.quality
 
 abt: silver gold    ## Gera a camada gold/ABT completa
 

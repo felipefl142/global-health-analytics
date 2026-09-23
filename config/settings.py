@@ -63,7 +63,7 @@ def all_indicator_codes(cfg: dict | None = None) -> dict[str, str]:
     """Retorna {nome_logico: codigo_wb} para todos os grupos."""
     cfg = cfg or load_indicators()
     out: dict[str, str] = {}
-    for group in ("targets", "uhc_inputs", "uhc_official_2019", "covariates"):
+    for group in ("targets", "uhc_inputs", "uhc_official", "covariates"):
         for name, spec in cfg.get(group, {}).items():
             out[name] = spec["code"]
     return out

@@ -5,7 +5,7 @@ api_base: "https://api.worldbank.org/v2"
 date_range:
   start: 1990
   end: 2023
-per_page: 50000
+per_page: 10000   # a API rejeita per_page muito grande (HTTP 400); ingestao pagina
 countries: "all"
 
 # ---- Alvos de predicao ----
@@ -30,8 +30,8 @@ uhc_inputs:
     code: "SH.XPD.GHED.GD.ZS"
     name: "Domestic general government health expenditure (% of GDP)"
   out_of_pocket:
-    code: "SH.XPD.OOPC.TO.ZS"
-    name: "Out-of-pocket health expenditure (% of total expenditure on health)"
+    code: "SH.XPD.OOPC.CH.ZS"   # substitui SH.XPD.OOPC.TO.ZS (removido da API)
+    name: "Out-of-pocket expenditure (% of current health expenditure)"
   doctors_per_1000:
     code: "SH.MED.PHYS.ZS"
     name: "Physicians (per 1,000 people)"
@@ -60,12 +60,12 @@ uhc_inputs:
     code: "SH.IMM.IDPT"
     name: "Immunization, DPT (% of children ages 12-23 months)"
 
-# ---- UHC oficial (snapshot 2019, WHO/World Bank) ----
-uhc_official_2019:
+# ---- UHC oficial (WHO/World Bank) ----
+uhc_official:
   uhc_sci:
     code: "SH_UHC_SCI"
-    name: "UHC service coverage index (SCI)"
-    note: "Disponivel apenas em 2019 (snapshot) - usado p/ validacao transversal e feature."
+    name: "UHC service coverage index (SCI, 0-100)"
+    note: "Serie anual 2000-2023 na API v2 (verificado em 2026-09). Validacao do proxy + feature."
 
 # ---- Covariados (confounders) ----
 covariates:
@@ -81,3 +81,21 @@ covariates:
   population:
     code: "SP.POP.TOTL"
     name: "Population, total"
+
+# ---- Fonte 2: WHO Global Health Observatory (OData API) ----
+# Enriquecimento (nao entra no proxy UHC). Filtro: paises, ambos os sexos.
+who_gho:
+  api_base: "https://ghoapi.azureedge.net/api"
+  indicators:
+    ncd_mortality_30_70:
+      code: "NCDMORT3070"
+      name: "Probability (%) of dying age 30-70 from CVD, cancer, diabetes or CRD"
+    maternal_mortality:
+      code: "MDG_0000000026"
+      name: "Maternal mortality ratio (per 100 000 live births)"
+    tb_incidence:
+      code: "MDG_0000000020"
+      name: "Incidence of tuberculosis (per 100 000 population per year)"
+    road_traffic_deaths:
+      code: "RS_198"
+      name: "Estimated road traffic death rate (per 100 000 population)"

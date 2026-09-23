@@ -18,9 +18,9 @@ import json
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance
-from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -29,6 +29,8 @@ from sklearn.metrics import (
     r2_score,
     roc_auc_score,
 )
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 from config import settings
 from src.modeling.dataset import TARGETS, build_dataset
@@ -36,12 +38,19 @@ from src.modeling.dataset import TARGETS, build_dataset
 
 def _xgb(kind: str):
     import xgboost as xgb
-    params = dict(n_estimators=400, learning_rate=0.03, max_depth=6,
+    params = dict(n_estimators=2000, learning_rate=0.03, max_depth=6,
                   subsample=0.8, colsample_bytree=0.8, tree_method="hist",
                   early_stopping_rounds=50, random_state=42, n_jobs=-1)
     if kind == "regression":
         return xgb.XGBRegressor(**params)
     return xgb.XGBClassifier(eval_metric="logloss", **params)
+
+
+def _linear(kind: str):
+    """Baseline linear: mediana p/ NaN + padronizacao + Ridge/Logistica."""
+    head = Ridge(alpha=1.0) if kind == "regression" else LogisticRegression(max_iter=2000)
+    return make_pipeline(SimpleImputer(strategy="median", add_indicator=True),
+                         StandardScaler(), head)
 
 
 def _eval_regr(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
@@ -76,7 +85,7 @@ def _importance(model, X: pd.DataFrame, kind: str, y) -> dict:
             "method": "shap",
             "top": {X.columns[i]: round(float(mean_abs[i]), 4) for i in order[:10]},
         }
-    except Exception as e:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         try:
             pi = permutation_importance(model, X, y, n_repeats=3, random_state=42, n_jobs=-1)
             order = np.argsort(pi.importances_mean)[::-1]
@@ -96,13 +105,14 @@ def train_one(target: str) -> dict:
                     "n_test": len(md.X_test), "features": md.features}
 
     # Baseline linear
-    lin = Ridge(alpha=1.0) if md.kind == "regression" else LinearRegression()
+    lin = _linear(md.kind)
     lin.fit(md.X_train, md.y_train)
     if md.kind == "regression":
         report["linear"] = {"valid": _eval_regr(md.y_valid, lin.predict(md.X_valid)),
                             "test": _eval_regr(md.y_test, lin.predict(md.X_test))}
     else:
-        report["linear"] = {"note": "baseline nao suportado p/ classificacao"}
+        report["linear"] = {"valid": _eval_clf(md.y_valid, lin.predict_proba(md.X_valid)[:, 1]),
+                            "test": _eval_clf(md.y_test, lin.predict_proba(md.X_test)[:, 1])}
 
     # XGBoost (principal) - NaN tratado nativamente; early stopping no valid
     model = _xgb(md.kind)

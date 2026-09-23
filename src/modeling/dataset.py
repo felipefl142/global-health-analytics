@@ -7,10 +7,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 
-from config import settings
 from src.utils.io import load_parquet
 
 # Colunas de feature (insumos UHC + covariados). 'population' e escala, nao prediz taxas.
@@ -22,6 +20,12 @@ FEATURES: list[str] = [
     "gdp_per_capita", "urban_pct", "fertility",
     "uhc_index",
 ]
+
+# M3 e definido a partir do proprio uhc_index (label = uhc_index >= 0.8 E LE >= 70):
+# usar uhc_index como feature seria vazamento direto do label.
+EXCLUDE_BY_TARGET: dict[str, set[str]] = {
+    "milestone_high": {"uhc_index"},
+}
 
 TARGETS = {
     "life_expectancy": "M1",
@@ -57,6 +61,8 @@ def load_abt() -> pd.DataFrame:
 def _clean(df: pd.DataFrame, target: str, features: list[str]) -> pd.DataFrame:
     cols = ["country_id", "year"] + features + [target]
     out = df[cols].dropna(subset=[target]).copy()
+    if target == "milestone_high":
+        out[target] = out[target].astype(int)
     return out
 
 
@@ -69,8 +75,9 @@ def time_split(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
 
 
 def build_dataset(target: str, features: list[str] | None = None) -> ModelData:
-    feats = features or FEATURES
     abt = load_abt()
+    excluded = EXCLUDE_BY_TARGET.get(target, set())
+    feats = [f for f in (features or FEATURES) if f not in excluded and f in abt.columns]
     clean = _clean(abt, target, feats)
     kind = "classification" if target == "milestone_high" else "regression"
     splits = time_split(clean)
