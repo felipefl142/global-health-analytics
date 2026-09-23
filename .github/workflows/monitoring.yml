@@ -1,0 +1,49 @@
+name: monitoring
+
+# Semanal: re-ingere tudo, reconstroi gold, retreina e gera o drift report.
+# Drift gera aviso + resumo no job; so falha o job se acionado com fail_on_drift=true.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      fail_on_drift:
+        description: "Falhar o job se houver alerta de drift"
+        type: boolean
+        default: false
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ONLINE_STORE_TYPE: sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Pipeline completo
+        run: |
+          python -m src.ingestion.worldbank
+          python -m src.ingestion.who_gho
+          python -m src.transform.bronze_to_silver
+          python -m src.transform.build_abt
+          python -m src.transform.quality
+          python -m src.modeling.train
+      - name: Drift report
+        id: drift
+        run: |
+          python -m src.monitoring.drift --markdown "$GITHUB_STEP_SUMMARY" \
+            ${{ inputs.fail_on_drift && '--fail-on-drift' || '' }}
+          python -c "import json; r=json.load(open('reports/drift_report.json')); print('::warning::alerta de drift ativo' if r['alert'] else 'sem drift')"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: drift-report
+          path: |
+            reports/drift_report.json
+            data/bronze/ingest_log.json
+            data/gold/quality_checks.json

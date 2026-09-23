@@ -19,7 +19,7 @@ MODELS_DIR = Path(os.getenv("MODELS_DIR", ROOT / "models"))
 BRONZE_DIR = DATA_DIR / "bronze"
 SILVER_DIR = DATA_DIR / "silver"
 GOLD_DIR = DATA_DIR / "gold"
-REPORTS_DIR = ROOT / "reports"
+REPORTS_DIR = Path(os.getenv("REPORTS_DIR", ROOT / "reports"))
 
 INDICATORS_FILE = CONFIG_DIR / "indicators.yaml"
 

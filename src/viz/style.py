@@ -62,15 +62,17 @@ def mpl_diverging():
 
 
 def plotly_template():
-    """Template plotly equivalente (dashboard)."""
+    """Template plotly (dashboard). Sem cor de texto fixa e com grade translucida neutra
+    p/ funcionar nos temas claro e escuro do Streamlit."""
     import plotly.graph_objects as go
 
-    axis = dict(gridcolor=INK["grid"], linecolor=INK["axis"], zeroline=False,
-                tickfont=dict(color=INK["secondary"]), title_font=dict(color=INK["secondary"]))
+    grid = "rgba(128,128,128,0.18)"
+    axis = dict(gridcolor=grid, linecolor="rgba(128,128,128,0.45)", zeroline=False)
     return go.layout.Template(layout=dict(
-        font=dict(family=FONT, color=INK["primary"], size=13),
+        font=dict(family=FONT, size=13),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         colorway=CATEGORICAL, xaxis={**axis, "showgrid": False}, yaxis=axis,
-        hoverlabel=dict(font_family=FONT), legend=dict(orientation="h", y=-0.2),
-        margin=dict(l=10, r=10, t=40, b=10),
+        hoverlabel=dict(font_family=FONT), hovermode="closest",
+        legend=dict(orientation="h", y=-0.18, title_text=""),
+        margin=dict(l=10, r=10, t=50, b=10),
     ))

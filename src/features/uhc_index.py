@@ -140,6 +140,8 @@ def treatment_timing(abt: pd.DataFrame, threshold: float = DID_THRESHOLD,
 
 def validate_against_sci(abt: pd.DataFrame, col: str = "uhc_index") -> dict:
     """Correlacao do proxy com o SCI oficial (0-100) nas linhas com ambos."""
+    if "uhc_sci" not in abt.columns or col not in abt.columns:
+        return {"n": 0}
     both = abt.dropna(subset=[col, "uhc_sci"])
     if len(both) < 10:
         return {"n": int(len(both))}

@@ -64,7 +64,7 @@ lint:               ## Lint (ruff)
 drift:              ## Monitoramento de drift
 	$(PY) -m src.monitoring.drift
 
-all: ingest silver gold train abtest hypotheses   ## Pipeline completo (dados -> modelos -> experimentos)
+all: ingest silver gold train abtest hypotheses drift   ## Pipeline completo (dados -> modelos -> experimentos -> drift)
 
 clean:              ## Remove camadas geradas e modelos
 	rm -rf data/bronze/* data/silver/* data/gold/* data/*.duckdb models/* .feast

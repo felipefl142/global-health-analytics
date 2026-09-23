@@ -24,6 +24,8 @@ def export_sources(abt: pd.DataFrame | None = None, dim: pd.DataFrame | None = N
     abt = load_parquet("gold", "abt_country_year") if abt is None else abt
     dim = load_parquet("silver", "countries_dim") if dim is None else dim
     cols = FEATURES + ff.EXTRA_YEARLY
+    # schema das feature views e fixo: colunas ausentes na ABT (ingestao parcial) viram NaN
+    abt = abt.reindex(columns=list(dict.fromkeys([*abt.columns, *cols])))
     yearly = abt[["country_id", "year", *cols]].dropna(subset=FEATURES, how="all").copy()
     yearly[cols] = yearly[cols].astype("float64")
     yearly["event_timestamp"] = pd.to_datetime(yearly["year"].astype(str) + "-12-31", utc=True)

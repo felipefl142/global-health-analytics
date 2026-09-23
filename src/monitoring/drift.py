@@ -122,9 +122,27 @@ def run(abt: pd.DataFrame | None = None, with_performance: bool = True) -> dict:
     return report
 
 
+def to_markdown(rep: dict) -> str:
+    lines = [f"## Drift report — {'⚠️ ALERTA' if rep['alert'] else '✅ OK'}",
+             f"Referência `{rep['reference']}` vs atual `{rep['current']}`; "
+             f"{rep['n_features_drifted']} features com drift de valor, "
+             f"{rep['n_features_missing_shift']} com mudança de cobertura.", "",
+             "| feature | PSI | KS | missing ref → atual | drift |", "|---|---|---|---|---|"]
+    for r in rep["data_drift"]:
+        psi_v = "–" if r["psi"] is None else f"{r['psi']:.3f}"
+        ks_v = "–" if r["ks"] is None else f"{r['ks']:.3f}"
+        lines.append(f"| {r['feature']} | {psi_v} | {ks_v} | {r['missing_ref']:.0%} → {r['missing_cur']:.0%} | "
+                     f"{'⚠️' if r['drift'] else ''} |")
+    for t, p in rep.get("performance", {}).items():
+        yrs = ", ".join(f"{r['year']}: {r['rmse']:.2f}{' ⚠️' if r['alert'] else ''}" for r in p["by_year"])
+        lines += ["", f"**{t}** — RMSE por ano (validação {p['valid_rmse']}): {yrs}"]
+    return "\n".join(lines) + "\n"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fail-on-drift", action="store_true", help="exit 1 se houver alerta (CI)")
+    ap.add_argument("--markdown", type=str, default="", help="escreve resumo markdown (ex.: $GITHUB_STEP_SUMMARY)")
     args = ap.parse_args()
     settings.ensure_dirs()
     rep = run()
@@ -138,6 +156,9 @@ def main() -> None:
         yrs = ", ".join(f"{r['year']}:{r['rmse']:.2f}{'!' if r['alert'] else ''}" for r in p["by_year"])
         print(f"Performance {t} (valid RMSE {p['valid_rmse']}): {yrs}")
     print(f"ALERTA: {rep['alert']}  -> {out}")
+    if args.markdown:
+        with open(args.markdown, "a") as f:
+            f.write(to_markdown(rep))
     if args.fail_on_drift and rep["alert"]:
         sys.exit(1)
 
