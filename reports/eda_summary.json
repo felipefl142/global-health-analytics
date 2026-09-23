@@ -26,6 +26,14 @@
         "n": 4537,
         "missing_rate": 0.3851
       },
+      "health_exp_gdp": {
+        "n": 4540,
+        "missing_rate": 0.3847
+      },
+      "out_of_pocket": {
+        "n": 4540,
+        "missing_rate": 0.3847
+      },
       "gdp_per_capita": {
         "n": 7015,
         "missing_rate": 0.0492
@@ -46,9 +54,17 @@
         "n": 4973,
         "missing_rate": 0.326
       },
+      "sanitation_safely": {
+        "n": 3428,
+        "missing_rate": 0.5354
+      },
       "water_basic": {
         "n": 5007,
         "missing_rate": 0.3214
+      },
+      "water_safely": {
+        "n": 3568,
+        "missing_rate": 0.5164
       },
       "measles_imm_pct": {
         "n": 6424,
@@ -103,6 +119,18 @@
       "Upper middle income": 0.3156,
       "High income": 0.4791
     },
+    "health_exp_gdp": {
+      "Low income": 0.36,
+      "Lower middle income": 0.3135,
+      "Upper middle income": 0.3141,
+      "High income": 0.4791
+    },
+    "out_of_pocket": {
+      "Low income": 0.36,
+      "Lower middle income": 0.3135,
+      "Upper middle income": 0.3141,
+      "High income": 0.4791
+    },
     "gdp_per_capita": {
       "Low income": 0.1071,
       "Lower middle income": 0.0025,
@@ -133,11 +161,23 @@
       "Upper middle income": 0.3255,
       "High income": 0.3362
     },
+    "sanitation_safely": {
+      "Low income": 0.5224,
+      "Lower middle income": 0.5357,
+      "Upper middle income": 0.5543,
+      "High income": 0.526
+    },
     "water_basic": {
       "Low income": 0.3153,
       "Lower middle income": 0.3116,
       "Upper middle income": 0.3265,
       "High income": 0.3249
+    },
+    "water_safely": {
+      "Low income": 0.6329,
+      "Lower middle income": 0.5357,
+      "Upper middle income": 0.5394,
+      "High income": 0.4562
     },
     "measles_imm_pct": {
       "Low income": 0.0494,
@@ -177,12 +217,16 @@
       "uhc_index": 0.84,
       "uhc_sci": 0.855,
       "health_exp_per_capita": 0.576,
+      "health_exp_gdp": 0.269,
+      "out_of_pocket": -0.341,
       "gdp_per_capita": 0.568,
       "doctors_per_1000": 0.641,
       "nurses_per_1000": 0.569,
       "beds_per_1000": 0.257,
       "sanitation_basic": 0.847,
+      "sanitation_safely": 0.712,
       "water_basic": 0.813,
+      "water_safely": 0.847,
       "measles_imm_pct": 0.636,
       "dpt_imm_pct": 0.657,
       "urban_pct": 0.635,
@@ -195,12 +239,16 @@
       "uhc_index": -0.804,
       "uhc_sci": -0.85,
       "health_exp_per_capita": -0.4,
+      "health_exp_gdp": -0.282,
+      "out_of_pocket": 0.403,
       "gdp_per_capita": -0.388,
       "doctors_per_1000": -0.568,
       "nurses_per_1000": -0.499,
       "beds_per_1000": -0.323,
       "sanitation_basic": -0.83,
+      "sanitation_safely": -0.648,
       "water_basic": -0.837,
+      "water_safely": -0.759,
       "measles_imm_pct": -0.695,
       "dpt_imm_pct": -0.725,
       "urban_pct": -0.581,
@@ -255,6 +303,24 @@
       "outlier_rate": 0.1393
     },
     {
+      "indicator": "health_exp_gdp",
+      "q1": 4.139,
+      "q3": 7.965,
+      "lower": -1.601,
+      "upper": 13.705,
+      "outliers": 69,
+      "outlier_rate": 0.0152
+    },
+    {
+      "indicator": "out_of_pocket",
+      "q1": 16.778,
+      "q3": 47.325,
+      "lower": -29.043,
+      "upper": 93.147,
+      "outliers": 0,
+      "outlier_rate": 0.0
+    },
+    {
       "indicator": "gdp_per_capita",
       "q1": 1150.416,
       "q3": 17213.865,
@@ -300,6 +366,15 @@
       "outlier_rate": 0.0
     },
     {
+      "indicator": "sanitation_safely",
+      "q1": 25.068,
+      "q3": 84.22,
+      "lower": -63.661,
+      "upper": 172.948,
+      "outliers": 0,
+      "outlier_rate": 0.0
+    },
+    {
       "indicator": "water_basic",
       "q1": 80.832,
       "q3": 99.328,
@@ -307,6 +382,15 @@
       "upper": 127.073,
       "outliers": 404,
       "outlier_rate": 0.0807
+    },
+    {
+      "indicator": "water_safely",
+      "q1": 42.564,
+      "q3": 96.632,
+      "lower": -38.539,
+      "upper": 177.736,
+      "outliers": 0,
+      "outlier_rate": 0.0
     },
     {
       "indicator": "measles_imm_pct",
