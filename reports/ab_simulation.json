@@ -1,0 +1,59 @@
+{
+  "config": {
+    "delta_uhc": 0.3,
+    "fracao_tratamento": 0.5,
+    "seed": 42,
+    "periodo": ">=2020",
+    "n_testes": 2,
+    "unidade": "pais (media do periodo)"
+  },
+  "metricas": {
+    "life_expectancy": {
+      "efeito": 2.0378758711073743,
+      "ic95": [
+        -0.2004011998643298,
+        4.2761529420790785
+      ],
+      "p": 0.07408719576831108,
+      "se": 1.1344660475231974,
+      "cohen_d": 0.26063901134607037,
+      "n_trat": 95,
+      "n_ctrl": 95,
+      "efeito_real_uplift": 1.8657134441932262,
+      "poder": 0.43148928011336407,
+      "cuped_efeito": 1.1295360748312362,
+      "cuped_ic95": [
+        0.12173081775750605,
+        2.1373413319049663
+      ],
+      "cuped_p": 0.028261861401558154,
+      "cuped_poder": 0.5951491335931328,
+      "cuped_reducao_variancia": 0.7956391059950116,
+      "p_bonferroni": 0.14817439153662215
+    },
+    "child_mortality": {
+      "efeito": -18.799006814462636,
+      "ic95": [
+        -28.541267009252483,
+        -9.05674661967279
+      ],
+      "p": 0.00019106924861255777,
+      "se": 4.9382364740336655,
+      "cohen_d": -0.5523523647059732,
+      "n_trat": 95,
+      "n_ctrl": 95,
+      "efeito_real_uplift": -11.29460533857053,
+      "poder": 0.966176019431744,
+      "cuped_efeito": -16.877450584024825,
+      "cuped_ic95": [
+        -21.827314410451464,
+        -11.927586757598185
+      ],
+      "cuped_p": 2.1073928666206425e-10,
+      "cuped_poder": 0.9999988902140419,
+      "cuped_reducao_variancia": 0.7026620846185536,
+      "p_bonferroni": 0.00038213849722511554
+    }
+  },
+  "nota": "Desfecho simulado via modelo dose-resposta; efeito verdadeiro = uplift medio."
+}
