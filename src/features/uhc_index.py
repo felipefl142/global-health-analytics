@@ -52,6 +52,8 @@ def _carregar_insumos() -> pd.DataFrame:
     dim = pd.read_parquet(settings.SILVER_DIR / "countries_dim.parquet")
     validos = set(dim.loc[~dim["is_aggregate"], "country_code"])
     long = long[long["indicator"].isin(PESOS) & long["country_code"].isin(validos)]
+    if long.empty:
+        return pd.DataFrame(columns=["country_code", "year", *PESOS])
     wide = long.pivot_table(
         index=["country_code", "year"], columns="indicator", values="value", aggfunc="mean"
     ).reset_index()
@@ -135,6 +137,9 @@ def build_uhc_index() -> pd.DataFrame:
     wide["uhc_index"] = _calcular_indice(wide)
     cols = ["country_code", "year", "uhc_index"]
     idx = wide[cols].dropna(subset=["uhc_index"]).reset_index(drop=True)
+    if idx.empty:
+        return pd.DataFrame(columns=[*cols, "treated", "treat_year", "post",
+                                     "always_treated", "never_treated"])
     return compute_timing(idx)
 
 

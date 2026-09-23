@@ -27,7 +27,9 @@ def build_abt() -> pd.DataFrame:
     uhc = build_uhc_index()
     timing = timing_por_pais(uhc)
 
-    abt = _pivot(wb).merge(_pivot(who), on=["country_code", "year"], how="left")
+    abt = _pivot(wb)
+    if not who.empty:
+        abt = abt.merge(_pivot(who), on=["country_code", "year"], how="left")
     abt = abt.merge(uhc[["country_code", "year", "uhc_index"]], on=["country_code", "year"],
                     how="left")
     abt = abt.merge(timing, on="country_code", how="left")
@@ -42,7 +44,7 @@ def build_abt() -> pd.DataFrame:
     # Normaliza as flags do DiD para todos os anos (o merge introduz NaN/objeto).
     abt["treat_year"] = abt["treat_year"].astype("Int64")
     for flag in FLAGS:
-        abt[flag] = abt[flag].fillna(False).astype(bool)
+        abt[flag] = abt[flag].astype("boolean").fillna(False).astype(bool)
     abt["post"] = (abt["year"] >= abt["treat_year"]).fillna(False).astype(bool)
 
     indicadores = [c for c in abt.columns if c not in META + UHC]

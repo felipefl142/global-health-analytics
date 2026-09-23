@@ -106,19 +106,39 @@ def pagina_experimentos() -> None:
             st.line_chart(pd.DataFrame(s["serie"]).set_index("year"))
 
 
+def pagina_drift() -> None:
+    """Relatório de drift (PSI/KS) das features e performance dos modelos."""
+    st.header("Monitoramento de drift")
+    caminho = settings.REPORTS_DIR / "drift_report.json"
+    if not caminho.exists():
+        st.warning("Rode `make drift` para gerar o relatório.")
+        return
+    relatorio = read_json(caminho)
+    st.caption(f"Referência: {relatorio['referencia']} · Atual: {relatorio['atual']}")
+    if relatorio["alertas"]:
+        st.error(f"Alertas: {', '.join(relatorio['alertas'])}")
+    st.subheader("Features (PSI/KS)")
+    st.dataframe(pd.DataFrame(relatorio["features"]), use_container_width=True)
+    st.subheader("Performance (validação vs teste)")
+    st.dataframe(pd.DataFrame(relatorio["performance"]), use_container_width=True)
+
+
 def main() -> None:
     """Roteia as páginas do dashboard."""
     st.sidebar.title("Global Health Analytics")
     abt = carregar_abt()
-    pagina = st.sidebar.radio("Página", ["EDA", "Hipóteses", "Predição", "Experimentos"])
+    pagina = st.sidebar.radio(
+        "Página", ["EDA", "Hipóteses", "Predição", "Experimentos", "Drift"])
     if pagina == "EDA":
         pagina_eda(abt)
     elif pagina == "Hipóteses":
         pagina_hipoteses()
     elif pagina == "Predição":
         pagina_predicao(abt)
-    else:
+    elif pagina == "Experimentos":
         pagina_experimentos()
+    else:
+        pagina_drift()
 
 
 main()

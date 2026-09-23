@@ -1,0 +1,180 @@
+{
+  "referencia": "<= 2015",
+  "atual": ">= 2020",
+  "limiares": {
+    "psi": 0.25,
+    "ks": 0.3
+  },
+  "features": [
+    {
+      "feature": "gdp_per_capita",
+      "psi": 0.4236,
+      "ks": 0.2237,
+      "ks_p": 3.9386183072187005e-32,
+      "drift": true
+    },
+    {
+      "feature": "fertility",
+      "psi": 0.3625,
+      "ks": 0.1994,
+      "ks_p": 1.1730066964338086e-26,
+      "drift": true
+    },
+    {
+      "feature": "doctors_per_1000",
+      "psi": 0.2432,
+      "ks": 0.1371,
+      "ks_p": 9.67676008948561e-07,
+      "drift": false
+    },
+    {
+      "feature": "maternal_mortality",
+      "psi": 0.2245,
+      "ks": 0.1356,
+      "ks_p": 3.0694030649709994e-11,
+      "drift": false
+    },
+    {
+      "feature": "ncd_mortality_30_70",
+      "psi": 0.2218,
+      "ks": 0.1507,
+      "ks_p": 5.703624616456831e-07,
+      "drift": false
+    },
+    {
+      "feature": "tb_incidence",
+      "psi": 0.2075,
+      "ks": 0.1449,
+      "ks_p": 7.090349804395646e-12,
+      "drift": false
+    },
+    {
+      "feature": "beds_per_1000",
+      "psi": 0.1969,
+      "ks": 0.1561,
+      "ks_p": 1.4835017260882125e-08,
+      "drift": false
+    },
+    {
+      "feature": "health_exp_per_capita",
+      "psi": 0.1946,
+      "ks": 0.1509,
+      "ks_p": 1.2989175059676493e-12,
+      "drift": false
+    },
+    {
+      "feature": "sanitation_basic",
+      "psi": 0.1436,
+      "ks": 0.14,
+      "ks_p": 1.762186432635383e-11,
+      "drift": false
+    },
+    {
+      "feature": "water_basic",
+      "psi": 0.1299,
+      "ks": 0.1378,
+      "ks_p": 2.4947677536903702e-11,
+      "drift": false
+    },
+    {
+      "feature": "sanitation_safely",
+      "psi": 0.1292,
+      "ks": 0.1284,
+      "ks_p": 4.822005314034598e-07,
+      "drift": false
+    },
+    {
+      "feature": "health_exp_gdp",
+      "psi": 0.1203,
+      "ks": 0.1522,
+      "ks_p": 7.380916829693189e-13,
+      "drift": false
+    },
+    {
+      "feature": "out_of_pocket",
+      "psi": 0.1112,
+      "ks": 0.1361,
+      "ks_p": 2.342772700658725e-10,
+      "drift": false
+    },
+    {
+      "feature": "public_health_exp_gdp",
+      "psi": 0.1059,
+      "ks": 0.1415,
+      "ks_p": 3.6832646480839825e-11,
+      "drift": false
+    },
+    {
+      "feature": "urban_pct",
+      "psi": 0.0769,
+      "ks": 0.1219,
+      "ks_p": 3.473228052099242e-10,
+      "drift": false
+    },
+    {
+      "feature": "water_safely",
+      "psi": 0.0711,
+      "ks": 0.0896,
+      "ks_p": 0.0008611371042629041,
+      "drift": false
+    },
+    {
+      "feature": "dpt_imm_pct",
+      "psi": 0.0645,
+      "ks": 0.0609,
+      "ks_p": 0.013562668670538323,
+      "drift": false
+    },
+    {
+      "feature": "nurses_per_1000",
+      "psi": 0.0581,
+      "ks": 0.0506,
+      "ks_p": 0.28077505507027695,
+      "drift": false
+    },
+    {
+      "feature": "population",
+      "psi": 0.0294,
+      "ks": 0.0743,
+      "ks_p": 0.00047275788165113163,
+      "drift": false
+    },
+    {
+      "feature": "measles_imm_pct",
+      "psi": 0.0135,
+      "ks": 0.0386,
+      "ks_p": 0.26696976532584565,
+      "drift": false
+    }
+  ],
+  "performance": [
+    {
+      "model": "life_expectancy_reg",
+      "metrica": "rmse",
+      "valid": 1.8342830284886482,
+      "teste": 2.54457214178847,
+      "razao": 1.387,
+      "alerta": false
+    },
+    {
+      "model": "child_mortality_reg",
+      "metrica": "rmse",
+      "valid": 10.676289021959294,
+      "teste": 14.324071732561093,
+      "razao": 1.342,
+      "alerta": false
+    },
+    {
+      "model": "milestone_high_clf",
+      "metrica": "auc",
+      "valid": 0.9956918800873535,
+      "teste": 0.9938205585264409,
+      "queda": 0.002,
+      "alerta": false
+    }
+  ],
+  "alertas": [
+    "gdp_per_capita",
+    "fertility"
+  ]
+}

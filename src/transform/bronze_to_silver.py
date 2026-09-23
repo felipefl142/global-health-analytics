@@ -69,7 +69,8 @@ def build_worldbank_long(cfg: dict) -> pd.DataFrame:
             })
     df = pd.DataFrame(registros)
     if df.empty:
-        return df
+        return pd.DataFrame(columns=["country_code", "country_name", "indicator",
+                                     "indicator_code", "year", "value"])
     df = (df.groupby(["country_code", "country_name", "indicator", "indicator_code", "year"],
                      as_index=False)["value"].mean())
     return df.sort_values(["country_code", "indicator", "year"]).reset_index(drop=True)
@@ -100,7 +101,8 @@ def build_who_long(cfg: dict) -> pd.DataFrame:
             })
     df = pd.DataFrame(registros)
     if df.empty:
-        return df
+        return pd.DataFrame(columns=["country_code", "indicator", "indicator_code",
+                                     "year", "value"])
     df = (df.groupby(["country_code", "indicator", "indicator_code", "year"], as_index=False)
             ["value"].mean())
     return df.sort_values(["country_code", "indicator", "year"]).reset_index(drop=True)

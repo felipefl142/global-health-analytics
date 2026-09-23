@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  qualidade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Lint (ruff)
+        run: python -m ruff check .
+      - name: Testes (pytest)
+        run: python -m pytest tests/ -q
+      - name: Smoke do pipeline (ingest amostra -> silver -> gold)
+        env:
+          WB_API_DELAY: "0.2"
+        run: |
+          python -m src.ingestion.worldbank --codes SP.DYN.LE00.IN,SH.DYN.MORT,SH.XPD.CHEX.PC.CD,SH.MED.PHYS.ZS,SH.STA.BASS.ZS,SH.H2O.BASW.ZS,SH.IMM.MEAS,SH.IMM.IDPT,NY.GDP.PCAP.CD
+          python -m src.transform.bronze_to_silver
+          python -m src.transform.build_abt
