@@ -1,11 +1,12 @@
-# Catalogo de indicadores (World Bank) - codigos validados contra a API oficial.
-# A ingestao valida cada codigo e loga em data/bronze/ingest_log.json.
+# Catalogo de indicadores (World Bank + WHO GHO) - codigos validados contra as APIs oficiais.
+# A ingestao valida cada codigo e loga em data/bronze/ingest_log.json (WB) e ingest_log_who.json.
 source: worldbank
 api_base: "https://api.worldbank.org/v2"
+who_api_base: "https://ghoapi.azureedge.net/api"
 date_range:
   start: 1990
   end: 2023
-per_page: 50000
+per_page: 10000
 countries: "all"
 
 # ---- Alvos de predicao ----
@@ -30,8 +31,8 @@ uhc_inputs:
     code: "SH.XPD.GHED.GD.ZS"
     name: "Domestic general government health expenditure (% of GDP)"
   out_of_pocket:
-    code: "SH.XPD.OOPC.TO.ZS"
-    name: "Out-of-pocket health expenditure (% of total expenditure on health)"
+    code: "SH.XPD.OOPC.CH.ZS"
+    name: "Out-of-pocket health expenditure (% of current health expenditure)"
   doctors_per_1000:
     code: "SH.MED.PHYS.ZS"
     name: "Physicians (per 1,000 people)"
@@ -60,12 +61,14 @@ uhc_inputs:
     code: "SH.IMM.IDPT"
     name: "Immunization, DPT (% of children ages 12-23 months)"
 
-# ---- UHC oficial (snapshot 2019, WHO/World Bank) ----
-uhc_official_2019:
+# ---- UHC oficial (SCI, serie anual 2000-2023) ----
+# Validado ao vivo (2026-09): SH_UHC_SCI retorna serie anual; o codigo alternativo
+# SH.UHC.NOEF nao existe nesta API. Coluna usada p/ validar o proxy UHC (F2).
+uhc_official:
   uhc_sci:
     code: "SH_UHC_SCI"
     name: "UHC service coverage index (SCI)"
-    note: "Disponivel apenas em 2019 (snapshot) - usado p/ validacao transversal e feature."
+    note: "Serie anual 2000-2023; usada para validar o proxy de painel."
 
 # ---- Covariados (confounders) ----
 covariates:
@@ -81,3 +84,20 @@ covariates:
   population:
     code: "SP.POP.TOTL"
     name: "Population, total"
+
+# ---- WHO GHO (fonte secundaria de enriquecimento via API OData) ----
+# Carga de doenca/risco que complementa os alvos do World Bank.
+who_gho:
+  ncd_mortality_30_70:
+    code: "NCDMORT3070"
+    name: "Prob. de morrer entre 30 e 70 anos por DCNT (%)"
+    sex: "SEX_BTSX"   # ambos os sexos (a serie tem dimensao de sexo)
+  maternal_mortality:
+    code: "MDG_0000000026"
+    name: "Razao de mortalidade materna (por 100 000 nascidos vivos)"
+  tb_incidence:
+    code: "MDG_0000000020"
+    name: "Incidencia de tuberculose (por 100 000 hab./ano)"
+  road_traffic_death_rate:
+    code: "RS_198"
+    name: "Taxa estimada de mortalidade por transito (por 100 000 hab.)"

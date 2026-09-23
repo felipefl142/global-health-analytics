@@ -14,8 +14,9 @@ install:            ## Cria venv e instala dependencias
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r requirements.txt
 
-ingest:             ## Ingestao World Bank API -> bronze
+ingest:             ## Ingestao World Bank + WHO GHO -> bronze
 	$(PY) -m src.ingestion.worldbank
+	$(PY) -m src.ingestion.who_gho
 
 silver:             ## bronze -> silver (limpo/estandarizado)
 	$(PY) -m src.transform.bronze_to_silver

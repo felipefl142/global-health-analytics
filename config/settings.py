@@ -36,6 +36,9 @@ WB_API_BASE = os.getenv("WB_API_BASE", "https://api.worldbank.org/v2")
 WB_API_DELAY = float(os.getenv("WB_API_DELAY", "0.6"))
 WB_RETRIES = int(os.getenv("WB_RETRIES", "4"))
 
+# WHO GHO API (OData)
+WHO_API_BASE = os.getenv("WHO_API_BASE", "https://ghoapi.azureedge.net/api")
+
 # Drift
 DRIFT_PSI_THRESHOLD = float(os.getenv("DRIFT_PSI_THRESHOLD", "0.25"))
 DRIFT_KS_THRESHOLD = float(os.getenv("DRIFT_KS_THRESHOLD", "0.30"))
@@ -60,13 +63,19 @@ def load_indicators() -> dict:
 
 
 def all_indicator_codes(cfg: dict | None = None) -> dict[str, str]:
-    """Retorna {nome_logico: codigo_wb} para todos os grupos."""
+    """Retorna {nome_logico: codigo_wb} para todos os grupos do World Bank."""
     cfg = cfg or load_indicators()
     out: dict[str, str] = {}
-    for group in ("targets", "uhc_inputs", "uhc_official_2019", "covariates"):
+    for group in ("targets", "uhc_inputs", "uhc_official", "covariates"):
         for name, spec in cfg.get(group, {}).items():
             out[name] = spec["code"]
     return out
+
+
+def who_indicators(cfg: dict | None = None) -> dict[str, dict]:
+    """Retorna {nome_logico: spec} dos indicadores do WHO GHO."""
+    cfg = cfg or load_indicators()
+    return cfg.get("who_gho", {})
 
 
 def date_range(cfg: dict | None = None) -> tuple[int, int]:

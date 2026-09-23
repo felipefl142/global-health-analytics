@@ -26,7 +26,7 @@ causal) e todo o serving em produção (DuckDB + medallion + Feast + FastAPI + S
 
 | Camada | Tecnologia |
 |---|---|
-| Ingestão | `requests` (World Bank API v2), CSVs WHO GHE → bronze |
+| Ingestão | `requests` (World Bank API v2), WHO GHO (API OData) → bronze |
 | Warehouse | DuckDB (catálogo com views sobre Parquet) |
 | Medallion | `bronze/` (raw) → `silver/` (limpo/padronizado) → `gold/` (curado) |
 | ABT | `abt_country_year` (1 linha por país × ano, wide) |
@@ -42,7 +42,8 @@ causal) e todo o serving em produção (DuckDB + medallion + Feast + FastAPI + S
 ## 3. Fontes de dados e modelo de entidade
 
 - **Fonte 1 (primária)**: World Bank API (`api.worldbank.org/v2`) — séries país × ano.
-- **Fonte 2 (secundária)**: WHO Global Health Estimates (GHE) — CSVs de mortalidade por causa (enriquecimento).
+- **Fonte 2 (secundária)**: WHO Global Health Observatory (GHO, API OData) — carga de
+  doença/risco (DCNT 30–70, mortalidade materna, incidência de TB, trânsito) para enriquecimento.
 - **Dimensão país**: nomes/ISO padronizados (consolidação multi-fonte no silver).
 - **Entidade primária**: country × year (painel). ABT = 1 linha por país × ano.
 - **Entidade secundária**: country (snapshot mais recente) p/ visão transversal.
@@ -53,25 +54,26 @@ Indicadores (códigos World Bank; fonte da verdade: `config/indicators.yaml`, va
   mortalidade infantil; não há série <1 ano confiável).
 - **Insumos UHC**:
   - gasto: `SH.XPD.CHEX.PC.CD` (per capita), `SH.XPD.CHEX.GD.ZS` (% PIB),
-    `SH.XPD.GHED.GD.ZS` (gasto público % PIB), `SH.XPD.OOPC.TO.ZS` (out-of-pocket)
+    `SH.XPD.GHED.GD.ZS` (gasto público % PIB), `SH.XPD.OOPC.CH.ZS` (out-of-pocket)
   - força de trabalho/estrutura: `SH.MED.PHYS.ZS` (médicos/1k), `SH.MED.NUMW.P3` (enfermeiros e
     parteiras/1k), `SH.MED.BEDS.ZS` (leitos/1k)
   - saneamento/água: `SH.STA.BASS.ZS`, `SH.H2O.BASW.ZS`, `SH.STA.SMSS.ZS`, `SH.H2O.SMDW.ZS`
   - vacinação: `SH.IMM.MEAS` (sarampo), `SH.IMM.IDPT` (DPT)
-- **UHC oficial (SCI)**: snapshot (2019) — o código atual no yaml (`SH_UHC_SCI`) não é buscável na
-  API v2; validar o código correto na ingestão. Usado só como feature de snapshot/validação, nunca
-  como série temporal.
+- **UHC oficial (SCI)**: `SH_UHC_SCI` — série **anual 2000–2023** na API v2 (verificado ao vivo em
+  2026-09; o `SH.UHC.NOEF` do plano original não existe). Usado para validar o proxy de painel.
+- **WHO GHO**: `NCDMORT3070` (DCNT 30–70), `MDG_0000000026` (materna), `MDG_0000000020` (TB),
+  `RS_198` (trânsito) — fonte secundária de enriquecimento.
 - **Covariados**: `NY.GDP.PCAP.CD` (PIB/capita), `SP.URB.TOTL.IN.ZS` (urbanização),
   `SP.DYN.TFRT.IN` (fertilidade), `SP.POP.TOTL` (população).
 
 ## 4. Decisão de projeto: proxy UHC
 
-O índice oficial UHC (SCI) é snapshot — não vira série p/ o DiD 1990–2023. Solução (implementada em
-`src/features/uhc_index.py`):
+O SCI oficial cobre 2000–2023; o painel começa em 1990 e o DiD precisa de um índice em todos os
+anos. Solução (implementada em `src/features/uhc_index.py`):
 
 - Proxy `uhc_index` (0..1) por país × ano: média ponderada dos insumos UHC com normalização robusta
   por percentis 5/95.
-- O SCI oficial entra como feature de snapshot + validação transversal do proxy.
+- O SCI oficial (2000–2023) entra como validação do proxy (correlação de Pearson).
 - Tratamento do DiD = primeiro ano em que o país cruza `uhc_index ≥ 0.5` (timing escalonado;
   colunas `treated`, `treat_year`, `post`).
 - Marco M3 = `uhc_index ≥ 0.8` **e** expectativa de vida ≥ 70.
@@ -84,7 +86,7 @@ global-health-analytics/
 ├── Makefile · docker-compose.yml (Redis)
 ├── config/            # indicators.yaml, settings.py, feast/
 ├── src/
-│   ├── ingestion/     # worldbank.py, who_ghe.py            → bronze
+│   ├── ingestion/     # worldbank.py, who_gho.py            → bronze
 │   ├── transform/     # bronze_to_silver.py, build_abt.py, quality.py
 │   ├── features/      # uhc_index.py (proxy UHC + timing DiD)
 │   ├── modeling/      # dataset.py, train.py, evaluate.py
@@ -107,8 +109,8 @@ Repo, requirements, `config/`, Makefile, docker-compose (Redis), `data/` (bronze
 ✅ `make install && make test` roda; `docker compose up` sobe Redis.
 
 **F1 — Ingestão → Bronze**
-`worldbank.py` (API → JSON raw por indicador, idempotente, retry/backoff), `who_ghe.py`
-(CSV → Parquet). Validação dos códigos de indicador contra a API.
+`worldbank.py` (API → JSON raw por indicador, idempotente, retry/backoff), `who_gho.py`
+(API OData → JSON raw por indicador). Validação dos códigos de indicador contra as APIs.
 ✅ `make ingest` produz `data/bronze/*` íntegro e `ingest_log.json` sem erros.
 
 **F2 — Transform → Silver + Gold (ABT)**
@@ -189,10 +191,10 @@ dos modelos, git tags de versão.
 
 ## 7. Riscos e pendências
 
-- **Ingestão quebrada (prioridade ao retomar F1)**: a última execução falhou em todos os 20
-  indicadores (19× HTTP 400, 1× código inválido — `data/bronze/ingest_log.json`); sem parquet,
-  silver/gold/train falham.
-- UHC SCI é snapshot → mitigado com o proxy UHC de painel (F2/F7).
+- **Ingestão resolvida em F1**: 22 indicadores World Bank + 4 WHO GHO baixados sem erros
+  (`data/bronze/ingest_log.json` / `ingest_log_who.json`). Causas anteriores: `per_page=50000`
+  (HTTP 400) e código OOP descontinuado.
+- UHC SCI cobre só 2000–2023 → proxy UHC de painel cobre 1990+ (F2/F7).
 - Missingness em indicadores de saúde global → tratado no silver + flags; XGBoost lida com NaN.
 - Leakage temporal em painel → split temporal + CUPED no A/B; valid usado no early stopping, então
   a métrica honesta é a de test.
