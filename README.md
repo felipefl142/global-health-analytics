@@ -18,7 +18,7 @@ central: **expansão de cobertura UHC → expectativa de vida**.
 | Warehouse | DuckDB (catálogo com views sobre Parquet) |
 | Medallion | `data/bronze` (raw) → `data/silver` (limpo/long) → `data/gold` (ABT wide) |
 | Feature engineering | Proxy UHC 0..1 + timing de tratamento p/ DiD |
-| Modelos | scikit-learn + LightGBM + SHAP (artefatos `.joblib` + relatórios JSON) |
+| Modelos | scikit-learn + XGBoost + SHAP (artefatos `.joblib` + relatórios JSON) |
 | Orquestração | Makefile + docker-compose (Redis, p/ serving futuro) |
 | Plano de serving | Feast (offline=DuckDB, online=Redis) + FastAPI + Streamlit + drift PSI/KS |
 
@@ -42,7 +42,7 @@ central: **expansão de cobertura UHC → expectativa de vida**.
   - M1 `life_expectancy_reg` — expectativa de vida (regressão)
   - M2 `child_mortality_reg` — mortalidade infantil <5 (regressão)
   - M3 `milestone_high_clf` — marco de saúde alto: UHC ≥ 0.8 **e** LE ≥ 70 (classificação)
-  - Cada modelo: baseline ridge/linear + LightGBM, métricas (RMSE/MAE/R²;
+  - Cada modelo: baseline ridge/linear + XGBoost, métricas (RMSE/MAE/R²;
     AUC/F1), importância de features (SHAP com fallback p/ permutation) e
     artefatos em `models/*.joblib` + `models/*_eval.json`.
 - **DuckDB catalogado**: `data/catalog.duckdb` com schemas `silver.*` e
@@ -133,9 +133,9 @@ query("SELECT country_name, year, uhc_index, life_expectancy \
 ```bash
 make train
 # artefatos:
-#   models/life_expectancy_reg_lgbm.joblib  (+ _lin, _eval.json)
-#   models/child_mortality_reg_lgbm.joblib
-#   models/milestone_high_clf_lgbm.joblib
+#   models/life_expectancy_reg_xgb.joblib  (+ _lin, _eval.json)
+#   models/child_mortality_reg_xgb.joblib
+#   models/milestone_high_clf_xgb.joblib
 #   models/all_eval.json  (relatório consolidado)
 ```
 

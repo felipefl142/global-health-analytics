@@ -4,9 +4,9 @@
 - M2 (regressao): mortalidade infantil (<5)
 - M3 (classificacao): marco de saude 'alto' (UHC>=80% E LE>=70)
 
-Para cada modelo: baseline linear/ridge + LightGBM.
+Para cada modelo: baseline linear/ridge + XGBoost (early stopping no split de validacao).
 Saida:
-- models/<name>_lgbm.joblib / models/<name>_lin.joblib
+- models/<name>_xgb.joblib / models/<name>_lin.joblib
 - models/<name>_eval.json (metricas + importancia de features + SHAP top)
 
 Uso: python -m src.modeling.train
@@ -34,11 +34,14 @@ from config import settings
 from src.modeling.dataset import TARGETS, build_dataset
 
 
-def _lgbm(kind: str):
-    import lightgbm as lgb
-    params = dict(n_estimators=400, learning_rate=0.03, num_leaves=31,
-                  subsample=0.8, colsample_bytree=0.8, random_state=42, n_jobs=-1)
-    return lgb.LGBMRegressor(**params) if kind == "regression" else lgb.LGBMClassifier(**params)
+def _xgb(kind: str):
+    import xgboost as xgb
+    params = dict(n_estimators=400, learning_rate=0.03, max_depth=6,
+                  subsample=0.8, colsample_bytree=0.8, tree_method="hist",
+                  early_stopping_rounds=50, random_state=42, n_jobs=-1)
+    if kind == "regression":
+        return xgb.XGBRegressor(**params)
+    return xgb.XGBClassifier(eval_metric="logloss", **params)
 
 
 def _eval_regr(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
@@ -101,26 +104,28 @@ def train_one(target: str) -> dict:
     else:
         report["linear"] = {"note": "baseline nao suportado p/ classificacao"}
 
-    # LightGBM (principal)
-    model = _lgbm(md.kind)
-    model.fit(md.X_train, md.y_train)
+    # XGBoost (principal) - NaN tratado nativamente; early stopping no valid
+    model = _xgb(md.kind)
+    model.fit(md.X_train, md.y_train, eval_set=[(md.X_valid, md.y_valid)], verbose=False)
     if md.kind == "regression":
         p_valid = model.predict(md.X_valid)
         p_test = model.predict(md.X_test)
-        report["lgbm"] = {"valid": _eval_regr(md.y_valid, p_valid),
+        report["xgb"] = {"valid": _eval_regr(md.y_valid, p_valid),
                           "test": _eval_regr(md.y_test, p_test)}
     else:
         p_valid = model.predict_proba(md.X_valid)[:, 1]
         p_test = model.predict_proba(md.X_test)[:, 1]
-        report["lgbm"] = {"valid": _eval_clf(md.y_valid, p_valid),
+        report["xgb"] = {"valid": _eval_clf(md.y_valid, p_valid),
                           "test": _eval_clf(md.y_test, p_test)}
+    # valid usado no early stopping -> metrica de valid levemente otimista; test e limpo
+    report["xgb"]["best_iteration"] = int(model.best_iteration)
     report["importance"] = _importance(model, md.X_test, md.kind, md.y_test)
 
-    joblib.dump(model, settings.MODELS_DIR / f"{md.name}_lgbm.joblib")
+    joblib.dump(model, settings.MODELS_DIR / f"{md.name}_xgb.joblib")
     joblib.dump(lin, settings.MODELS_DIR / f"{md.name}_lin.joblib")
     eval_path = settings.MODELS_DIR / f"{md.name}_eval.json"
     eval_path.write_text(json.dumps(report, indent=2, ensure_ascii=False))
-    print(f"  [{md.name}] lgbm.test={report['lgbm']['test']}  -> {eval_path.name}")
+    print(f"  [{md.name}] xgb.test={report['xgb']['test']}  -> {eval_path.name}")
     return report
 
 
