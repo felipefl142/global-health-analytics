@@ -13,8 +13,15 @@
 
 | Fase | Status |
 |---|---|
-| F0–F2 (setup, ingestão, silver/gold, proxy UHC, `make train`) | Código implementado — **ingestão quebrada** (ver §7) |
-| F3–F12 | Pendente |
+| F0–F2 (setup, ingestão WB + WHO, silver/gold, proxy UHC) | ✅ (ingestão corrigida: paginação) |
+| F3–F5 (EDA, visualizações, hipóteses) | ✅ `src/analysis/`, notebooks 01–03 |
+| F6 (modelos XGBoost) | ✅ `make train`, notebook 04 |
+| F7 (A/B simulado + DiD + controle sintético) | ✅ `src/abtesting/`, notebook 05 |
+| F8–F10 (Feast, API, dashboard) | ✅ online store Redis ou SQLite |
+| F11 (CI/CD + drift) | ✅ `.github/workflows/`, `make drift` |
+| F12 (docs) | ✅ README com resultados |
+
+Resultados consolidados no [README](README.md#principais-resultados).
 
 ## 1. Objetivo
 
@@ -42,7 +49,9 @@ causal) e todo o serving em produção (DuckDB + medallion + Feast + FastAPI + S
 ## 3. Fontes de dados e modelo de entidade
 
 - **Fonte 1 (primária)**: World Bank API (`api.worldbank.org/v2`) — séries país × ano.
-- **Fonte 2 (secundária)**: WHO Global Health Estimates (GHE) — CSVs de mortalidade por causa (enriquecimento).
+- **Fonte 2 (secundária)**: WHO Global Health Observatory (API OData) — mortalidade por DCNT
+  30–70, materna, incidência de TB, trânsito (enriquecimento; substitui os CSVs GHE do plano
+  original por ter API estável).
 - **Dimensão país**: nomes/ISO padronizados (consolidação multi-fonte no silver).
 - **Entidade primária**: country × year (painel). ABT = 1 linha por país × ano.
 - **Entidade secundária**: country (snapshot mais recente) p/ visão transversal.
@@ -58,22 +67,22 @@ Indicadores (códigos World Bank; fonte da verdade: `config/indicators.yaml`, va
     parteiras/1k), `SH.MED.BEDS.ZS` (leitos/1k)
   - saneamento/água: `SH.STA.BASS.ZS`, `SH.H2O.BASW.ZS`, `SH.STA.SMSS.ZS`, `SH.H2O.SMDW.ZS`
   - vacinação: `SH.IMM.MEAS` (sarampo), `SH.IMM.IDPT` (DPT)
-- **UHC oficial (SCI)**: snapshot (2019) — o código atual no yaml (`SH_UHC_SCI`) não é buscável na
-  API v2; validar o código correto na ingestão. Usado só como feature de snapshot/validação, nunca
-  como série temporal.
+- **UHC oficial (SCI)**: `SH_UHC_SCI` — série anual 2000–2023 na API v2 (verificado em 2026-09;
+  o plano original supunha snapshot 2019). Usado para validar o proxy.
+- **Out-of-pocket**: `SH.XPD.OOPC.CH.ZS` (o `SH.XPD.OOPC.TO.ZS` foi removido da API).
 - **Covariados**: `NY.GDP.PCAP.CD` (PIB/capita), `SP.URB.TOTL.IN.ZS` (urbanização),
   `SP.DYN.TFRT.IN` (fertilidade), `SP.POP.TOTL` (população).
 
 ## 4. Decisão de projeto: proxy UHC
 
-O índice oficial UHC (SCI) é snapshot — não vira série p/ o DiD 1990–2023. Solução (implementada em
-`src/features/uhc_index.py`):
+O SCI oficial só cobre 2000–2023. Solução (implementada em `src/features/uhc_index.py`):
 
-- Proxy `uhc_index` (0..1) por país × ano: média ponderada dos insumos UHC com normalização robusta
-  por percentis 5/95.
-- O SCI oficial entra como feature de snapshot + validação transversal do proxy.
-- Tratamento do DiD = primeiro ano em que o país cruza `uhc_index ≥ 0.5` (timing escalonado;
-  colunas `treated`, `treat_year`, `post`).
+- Proxy `uhc_index` (0..1) por país × ano: interpolação intra-país dos insumos estruturais (só no
+  cálculo do índice), log do gasto, normalização robusta por percentis 5/95 e média ponderada sobre
+  os componentes disponíveis (≥ 50% do peso). Correlação com o SCI oficial: Pearson 0.91.
+- Tratamento do DiD = primeiro ano **≥ 2000** em que o país cruza `uhc_index ≥ 0.5` de forma
+  sustentada (antes de 2000 a composição do índice muda). *Always-treated* ficam fora; controles
+  *never-treated* precisam ter o proxy observado em ≥ 50% dos anos.
 - Marco M3 = `uhc_index ≥ 0.8` **e** expectativa de vida ≥ 70.
 
 ## 5. Estrutura do repositório
@@ -189,11 +198,16 @@ dos modelos, git tags de versão.
 
 ## 7. Riscos e pendências
 
-- **Ingestão quebrada (prioridade ao retomar F1)**: a última execução falhou em todos os 20
-  indicadores (19× HTTP 400, 1× código inválido — `data/bronze/ingest_log.json`); sem parquet,
-  silver/gold/train falham.
-- UHC SCI é snapshot → mitigado com o proxy UHC de painel (F2/F7).
-- Missingness em indicadores de saúde global → tratado no silver + flags; XGBoost lida com NaN.
-- Leakage temporal em painel → split temporal + CUPED no A/B; valid usado no early stopping, então
-  a métrica honesta é a de test.
-- Feast + Redis dependem de docker-compose.
+Resolvidos:
+- Ingestão quebrada (HTTP 400 com `per_page=50000`) → paginação; código OOP removido → substituído.
+- Missingness não aleatória (depende da renda) → XGBoost com NaN nativo, *n* efetivo reportado.
+- Leakage temporal → split temporal; valid usado no early stopping, métrica honesta é a de teste.
+- Feast sem Redis → online store SQLite configurável (`ONLINE_STORE_TYPE=sqlite`).
+
+Em aberto (próximos passos):
+- PIB em US$ correntes deriva com a inflação → trocar por `NY.GDP.PCAP.KD`.
+- Drift de performance pós-COVID (RMSE 2022 > 1.5× validação) → retreinar incluindo 2016–2019 no
+  treino e adicionar tendência temporal.
+- Intervalo conformal absoluto → conformal normalizado (heterocedástico) p/ mortalidade.
+- DiD: tratamento é cruzamento de índice contínuo; explorar políticas UHC discretas (datas de
+  reformas) como tratamento alternativo.

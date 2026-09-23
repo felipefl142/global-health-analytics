@@ -12,6 +12,9 @@ import yaml
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
+# .env antes de ler qualquer variavel (variaveis ja exportadas no shell tem precedencia)
+load_dotenv(ROOT / ".env")
+
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "data"))
 MODELS_DIR = Path(os.getenv("MODELS_DIR", ROOT / "models"))
@@ -40,10 +43,6 @@ WB_RETRIES = int(os.getenv("WB_RETRIES", "4"))
 DRIFT_PSI_THRESHOLD = float(os.getenv("DRIFT_PSI_THRESHOLD", "0.25"))
 DRIFT_KS_THRESHOLD = float(os.getenv("DRIFT_KS_THRESHOLD", "0.30"))
 
-load_dotenv(ROOT / ".env")
-# Recarrega apos load_dotenv (para capturar valores do .env)
-WB_API_BASE = os.getenv("WB_API_BASE", WB_API_BASE)
-REDIS_HOST = os.getenv("REDIS_HOST", REDIS_HOST)
 
 
 def ensure_dirs() -> None:

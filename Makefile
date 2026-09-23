@@ -27,7 +27,7 @@ gold:               ## silver -> gold (ABT + proxy UHC) + checks de qualidade
 
 abt: silver gold    ## Gera a camada gold/ABT completa
 
-features:           ## (re)constroi o proxy UHC e feature views
+features:           ## Inspeciona o proxy UHC (validacao vs SCI, tratados)
 	$(PY) -m src.features.uhc_index
 
 train:              ## Treina M1/M2/M3
@@ -46,7 +46,7 @@ notebooks:          ## Gera e executa os notebooks 01-05 (com outputs)
 redis-up:           ## Sobe Redis (online store) via docker-compose
 	docker compose up -d redis
 
-feast-materialize:  ## Materializa offline (DuckDB) -> online (Redis)
+feast-materialize:  ## gold -> Feast offline (DuckDB) -> online (Redis/SQLite)
 	$(PY) -m src.serving.feast_cli materialize
 
 serve:              ## API FastAPI
@@ -64,7 +64,10 @@ lint:               ## Lint (ruff)
 drift:              ## Monitoramento de drift
 	$(PY) -m src.monitoring.drift
 
-all: ingest silver gold train abtest hypotheses drift   ## Pipeline completo (dados -> modelos -> experimentos -> drift)
+# etapas em sequencia explicita: pre-requisitos de 'all' rodariam em paralelo com make -j
+PIPELINE := ingest silver gold train abtest hypotheses drift
+all:                ## Pipeline completo (dados -> modelos -> experimentos -> drift)
+	@for step in $(PIPELINE); do $(MAKE) --no-print-directory $$step || exit 1; done
 
 clean:              ## Remove camadas geradas e modelos
 	rm -rf data/bronze/* data/silver/* data/gold/* data/*.duckdb models/* .feast
