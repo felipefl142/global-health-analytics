@@ -403,14 +403,18 @@ def page_monitoring() -> None:
         cols = st.columns(len(perf))
         for col, (t, p) in zip(cols, perf.items(), strict=True):
             by = pd.DataFrame(p["by_year"])
-            f = go.Figure(go.Bar(x=by.year, y=by.rmse,
+            metric = "AUC" if p.get("metric") == "auc" else "RMSE"
+            yv, ref = (by.auc, p["valid_auc"]) if metric == "AUC" else (by.rmse, p["valid_rmse"])
+            f = go.Figure(go.Bar(x=by.year, y=yv,
                                  marker=dict(color=[style.DIVERGING[-2] if a else style.HIGHLIGHT for a in by.alert]),
-                                 hovertemplate="%{x}: RMSE %{y:.2f}<extra></extra>"))
-            f.add_hline(y=p["valid_rmse"], line=dict(color="rgba(128,128,128,0.7)", dash="dash"),
-                        annotation_text="RMSE validação", annotation_position="top left")
-            f.update_layout(title=label(t), height=320, yaxis_title="RMSE", xaxis=dict(dtick=1))
+                                 hovertemplate=f"%{{x}}: {metric} %{{y:.3f}}<extra></extra>"))
+            if ref is not None:
+                f.add_hline(y=ref, line=dict(color="rgba(128,128,128,0.7)", dash="dash"),
+                            annotation_text=f"{metric} validação", annotation_position="top left")
+            f.update_layout(title=label(t) if t in LABELS else "Marco alto (M3)", height=320,
+                            yaxis_title=metric, xaxis=dict(dtick=1))
             col.plotly_chart(f, use_container_width=True)
-        st.caption("Vermelho = RMSE acima de 1.5× o da validação (alerta).")
+        st.caption("Vermelho = alerta: RMSE acima de 1.5× o da validação, ou AUC 0.10 abaixo.")
     if "serving_drift" in rep:
         st.subheader(f"Drift no serving ({rep['n_serving_predictions']} predições logadas)")
         st.dataframe(pd.DataFrame(rep["serving_drift"]), hide_index=True, use_container_width=True)

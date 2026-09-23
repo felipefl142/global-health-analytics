@@ -106,3 +106,21 @@ def test_eda_helpers(abt):
     tr = eda.trends(abt, "life_expectancy")
     assert set(tr["income"]) == {"Low income", "High income"}
     assert not eda.latest_snapshot(abt, "life_expectancy").duplicated("country_id").any()
+
+
+def test_verdict_inconclusive_when_same_estimand_flips_sign():
+    from src.analysis.hypotheses import HypothesisResult, verdict
+
+    def h(robust):
+        return HypothesisResult("X", "t", "h0", "h1", "test", effect=-2.0, effect_unit="u",
+                                ci95=[-3, -1], p=0.001, n=100, min_relevant_effect=0.5,
+                                expected_sign=-1, extra={"robustness": robust}, p_holm=0.001)
+
+    flip = {"coef": 1.5, "ci95": [1, 2], "p": 0.001, "n": 100}
+    assert verdict(h({"fe_pais_sem_fe_ano": {**flip, "same_estimand": True}})).startswith("Inconclusiva")
+    # pooled mede outro estimando: nao torna inconclusiva
+    assert verdict(h({"pooled_between_within": {**flip, "same_estimand": False}})) == \
+        "Rejeita H0 - efeito relevante"
+    # sinal oposto mas nao significativo: nao torna inconclusiva
+    assert verdict(h({"fe_pais_sem_fe_ano": {**flip, "p": 0.4, "same_estimand": True}})) == \
+        "Rejeita H0 - efeito relevante"

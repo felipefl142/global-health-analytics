@@ -10,6 +10,10 @@ Convencoes:
 - H5: DiD escalonado com ajuste de tendencia (src.abtesting.causal_did).
 - Correcao de Holm sobre os p-valores principais das 6 hipoteses.
 - Significancia pratica: |efeito| >= limiar minimo relevante definido por hipotese.
+- Robustez: especificacoes alternativas do MESMO estimando (variacao dentro do pais):
+  FE so de pais (sem FE de ano) e FE sem Europa/Asia Central. Se alguma for significativa
+  com sinal oposto ao principal, o veredito vira "inconclusiva". O pooled (entre+dentro)
+  e reportado, mas mede outra coisa e nao entra no veredito.
 
 Uso: python -m src.analysis.hypotheses
 """
@@ -55,10 +59,11 @@ def _prep(abt: pd.DataFrame) -> pd.DataFrame:
 
 
 def panel_fe(df: pd.DataFrame, y: str, x: str, controls: tuple[str, ...] = ("log_gdp_pc",),
-             entity_effects: bool = True) -> dict:
-    """y ~ z(x) + controles + FE ano (+ FE pais); SE cluster por pais. Efeito por +1 DP de x.
+             entity_effects: bool = True, time_effects: bool = True) -> dict:
+    """y ~ z(x) + controles (+ FE ano) (+ FE pais); SE cluster por pais. Efeito por +1 DP de x.
 
     entity_effects=False -> 'pooled': usa tambem a variacao ENTRE paises.
+    time_effects=False -> sem controle de choques/tendencias globais comuns.
     """
     from linearmodels.panel import PanelOLS
 
@@ -66,8 +71,9 @@ def panel_fe(df: pd.DataFrame, y: str, x: str, controls: tuple[str, ...] = ("log
     sd = d[x].std()
     d["z"] = (d[x] - d[x].mean()) / sd
     d = d.set_index(["country_id", "year"])
-    res = PanelOLS(d[y], d[["z", *controls]], entity_effects=entity_effects, time_effects=True,
-                   drop_absorbed=True).fit(cov_type="clustered", cluster_entity=True)
+    res = PanelOLS(d[y], d[["z", *controls]], entity_effects=entity_effects,
+                   time_effects=time_effects, drop_absorbed=True).fit(
+        cov_type="clustered", cluster_entity=True)
     lo, hi = res.conf_int().loc["z"]
     return {"coef": float(res.params["z"]), "ci95": [float(lo), float(hi)],
             "p": float(res.pvalues["z"]), "n": int(res.nobs), "sd_x": float(sd),
@@ -87,8 +93,12 @@ def _h_panel(df, hid, title, y, x, sign, min_eff, unit, h0, h1) -> HypothesisRes
     # (transicao pos-sovietica dos anos 90: muitos medicos/leitos e LE em queda)
     pooled = panel_fe(df, y, x, entity_effects=False)
     no_eca = panel_fe(df[df["region"] != "Europe & Central Asia"], y, x)
-    robust = {k: {"coef": v["coef"], "ci95": v["ci95"], "p": v["p"], "n": v["n"]}
-              for k, v in (("pooled_between_within", pooled), ("fe_sem_europa_asia_central", no_eca))}
+    no_year = panel_fe(df, y, x, time_effects=False)
+    robust = {k: {"coef": v["coef"], "ci95": v["ci95"], "p": v["p"], "n": v["n"],
+                  "same_estimand": same}
+              for k, v, same in (("pooled_between_within", pooled, False),
+                                 ("fe_sem_europa_asia_central", no_eca, True),
+                                 ("fe_pais_sem_fe_ano", no_year, True))}
     return HypothesisResult(
         id=hid, title=title, h0=h0, h1=h1,
         test="PanelOLS FE pais+ano, controle log(PIB/cap), SE cluster pais",
@@ -142,7 +152,17 @@ def h5_did(abt: pd.DataFrame, n_boot: int = 199) -> HypothesisResult:
                                  "event_study": r["event_study"]})
 
 
+def sign_flips(h: HypothesisResult, alpha: float = 0.05) -> list[str]:
+    """Especificacoes do mesmo estimando, significativas e com sinal oposto ao principal."""
+    rb = h.extra.get("robustness", {})
+    return [k for k, v in rb.items()
+            if v.get("same_estimand") and v["p"] < alpha and np.sign(v["coef"]) != np.sign(h.effect)]
+
+
 def verdict(h: HypothesisResult, alpha: float = 0.05) -> str:
+    flips = sign_flips(h, alpha)
+    if flips:
+        return f"Inconclusiva - sensivel a especificacao ({', '.join(flips)} inverte o sinal)"
     sig = h.p_holm is not None and h.p_holm < alpha
     if not sig:
         return "Nao rejeita H0"

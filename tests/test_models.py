@@ -38,3 +38,15 @@ def test_models_handle_nan_and_shap():
         assert next(iter(imp["top"])) == "a"
         lin = _linear(kind).fit(X[:200], target[:200])  # baseline aceita NaN (imputer)
         assert len(lin.predict(X[250:])) == 50
+
+
+def test_ece_perfect_vs_miscalibrated():
+    from src.modeling.train import _eval_clf, expected_calibration_error
+
+    rng = np.random.default_rng(0)
+    p = rng.uniform(0, 1, 20000)
+    y = (rng.uniform(0, 1, 20000) < p).astype(int)            # calibrado por construcao
+    assert expected_calibration_error(y, p) < 0.02
+    assert expected_calibration_error(y, np.clip(p + 0.3, 0, 1)) > 0.15
+    m = _eval_clf(y, p)
+    assert {"brier", "log_loss", "ece", "precision", "recall", "auc"} <= set(m)

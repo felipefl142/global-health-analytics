@@ -6,8 +6,8 @@
   valores observados. Alerta: PSI > DRIFT_PSI_THRESHOLD ou KS > DRIFT_KS_THRESHOLD.
 - Drift de COBERTURA (sinal separado): |delta da taxa de missing| > MISSING_SHIFT. Misturar os
   dois no PSI faria series que so comecam em 2000 parecerem "drift de valor".
-- Performance: RMSE/MAE por ano nos anos com alvo observado vs RMSE de validacao;
-  alerta se RMSE do ano > PERF_RATIO x RMSE de validacao.
+- Performance: regressao -> RMSE/MAE por ano vs RMSE de validacao (alerta se > PERF_RATIO x);
+  classificacao -> AUC e Brier por ano vs AUC de validacao (alerta se cair > AUC_DROP).
 
 Uso: python -m src.monitoring.drift [--fail-on-drift]  -> reports/drift_report.json
 """
@@ -28,6 +28,7 @@ from src.utils.io import load_parquet
 N_BINS = 10
 EPS = 1e-4
 PERF_RATIO = 1.5
+AUC_DROP = 0.10
 MISSING_SHIFT = 0.10
 
 
@@ -64,14 +65,33 @@ def feature_drift(ref: pd.DataFrame, cur: pd.DataFrame, features: list[str]) -> 
     return df.sort_values("psi", ascending=False).reset_index(drop=True)
 
 
+def _clf_by_year(abt: pd.DataFrame, target: str, m, rep: dict) -> dict:
+    """AUC/Brier por ano do classificador vs AUC de validacao."""
+    from sklearn.metrics import brier_score_loss, roc_auc_score
+    valid_auc = rep["xgb"]["valid"].get("auc")
+    d = abt[abt["year"] >= TEST_START - 4].dropna(subset=[target])
+    prob = m.model.predict_proba(d[m.features].astype(float))[:, 1]
+    rows = []
+    for yr, idx in pd.Series(range(len(d)), index=d["year"].to_numpy()).groupby(level=0):
+        y, p = d[target].to_numpy()[idx.to_numpy()].astype(int), prob[idx.to_numpy()]
+        auc = float(roc_auc_score(y, p)) if len(np.unique(y)) > 1 else None
+        rows.append({"year": int(yr), "auc": auc, "brier": float(brier_score_loss(y, p)),
+                     "pos_rate": float(y.mean()), "n": int(len(y)),
+                     "alert": bool(auc is not None and valid_auc is not None
+                                   and valid_auc - auc > AUC_DROP)})
+    return {"metric": "auc", "valid_auc": valid_auc,
+            "by_year": pd.DataFrame(rows).round(4).to_dict(orient="records")}
+
+
 def performance_by_year(abt: pd.DataFrame) -> dict:
-    """RMSE/MAE por ano dos modelos de regressao vs RMSE de validacao."""
+    """Performance por ano: RMSE (regressao) ou AUC/Brier (classificacao) vs validacao."""
     from src.serving.predictor import load_models
     out = {}
     for target, m in load_models().items():
-        if m.kind != "regression":
-            continue
         rep = json.loads((settings.MODELS_DIR / f"{m.name}_eval.json").read_text())
+        if m.kind != "regression":
+            out[target] = _clf_by_year(abt, target, m, rep)
+            continue
         valid_rmse = rep["xgb"]["valid"]["rmse"]
         d = abt[abt["year"] >= TEST_START - 4].dropna(subset=[target])
         pred = m.model.predict(d[m.features].astype(float))
@@ -81,7 +101,7 @@ def performance_by_year(abt: pd.DataFrame) -> dict:
                    .agg(rmse=lambda e: float(np.sqrt(np.mean(e ** 2))), mae=lambda e: float(np.mean(np.abs(e))),
                         bias="mean", n="size"))
         by_year["alert"] = by_year["rmse"] > PERF_RATIO * valid_rmse
-        out[target] = {"valid_rmse": valid_rmse,
+        out[target] = {"metric": "rmse", "valid_rmse": valid_rmse,
                        "by_year": by_year.reset_index().round(3).to_dict(orient="records")}
     return out
 
@@ -122,6 +142,19 @@ def run(abt: pd.DataFrame | None = None, with_performance: bool = True) -> dict:
     return report
 
 
+def _perf_line(p: dict) -> str:
+    """Resumo de uma linha da performance por ano (RMSE ou AUC)."""
+    def fmt(r: dict, key: str, nd: int) -> str:
+        v = "–" if r[key] is None else f"{r[key]:.{nd}f}"
+        return f"{r['year']}: {v}{' ⚠️' if r['alert'] else ''}"
+
+    if p.get("metric") == "auc":
+        yrs = ", ".join(fmt(r, "auc", 3) for r in p["by_year"])
+        return f"AUC por ano (validação {p['valid_auc']}): {yrs}"
+    yrs = ", ".join(fmt(r, "rmse", 2) for r in p["by_year"])
+    return f"RMSE por ano (validação {p['valid_rmse']}): {yrs}"
+
+
 def to_markdown(rep: dict) -> str:
     lines = [f"## Drift report — {'⚠️ ALERTA' if rep['alert'] else '✅ OK'}",
              f"Referência `{rep['reference']}` vs atual `{rep['current']}`; "
@@ -134,8 +167,7 @@ def to_markdown(rep: dict) -> str:
         lines.append(f"| {r['feature']} | {psi_v} | {ks_v} | {r['missing_ref']:.0%} → {r['missing_cur']:.0%} | "
                      f"{'⚠️' if r['drift'] else ''} |")
     for t, p in rep.get("performance", {}).items():
-        yrs = ", ".join(f"{r['year']}: {r['rmse']:.2f}{' ⚠️' if r['alert'] else ''}" for r in p["by_year"])
-        lines += ["", f"**{t}** — RMSE por ano (validação {p['valid_rmse']}): {yrs}"]
+        lines += ["", f"**{t}** — {_perf_line(p)}"]
     return "\n".join(lines) + "\n"
 
 
@@ -153,8 +185,7 @@ def main() -> None:
     print(df[["feature", "psi", "ks", "missing_ref", "missing_cur", "drift", "missing_shift"]]
           .to_string(index=False))
     for t, p in rep.get("performance", {}).items():
-        yrs = ", ".join(f"{r['year']}:{r['rmse']:.2f}{'!' if r['alert'] else ''}" for r in p["by_year"])
-        print(f"Performance {t} (valid RMSE {p['valid_rmse']}): {yrs}")
+        print(f"Performance {t}: {_perf_line(p)}")
     print(f"ALERTA: {rep['alert']}  -> {out}")
     if args.markdown:
         with open(args.markdown, "a") as f:

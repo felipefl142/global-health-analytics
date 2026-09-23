@@ -5,7 +5,7 @@ Medallion pipeline over World Bank + WHO GHO global-health panel data (country �
 ## Commands (Makefile, all via `.venv`)
 
 - `make install` — venv + `requirements.txt` (a pip freeze; the dependency source of truth — pyproject has none). `nvidia-nccl-cu13` is deliberately NOT pinned (Linux-only xgboost dep).
-- Pipeline order: `make ingest` → `silver` → `gold` (runs quality checks) → `train` → `abtest` → `hypotheses` → `drift`. `make all` runs the whole chain. `make notebooks` rebuilds + executes notebooks 01–05.
+- Pipeline order: `make ingest` → `silver` → `gold` (runs quality checks) → `eda` → `train` → `abtest` → `hypotheses` → `drift`. `make all` runs the whole chain. `make notebooks` rebuilds + executes notebooks 01–05.
 - `make test` (pytest), `make lint` (ruff). Dashboard tests skip when `data/gold` / `models/` are empty.
 - `make clean` is destructive: deletes `data/bronze|silver|gold/*`, `data/*.duckdb`, `models/*`, `.feast` (a full re-ingest takes ~3–5 min).
 - Run modules as `python -m src....` from the repo root (`config` has no `__init__.py`; `python src/.../file.py` fails).
@@ -18,7 +18,9 @@ Medallion pipeline over World Bank + WHO GHO global-health panel data (country �
 - The API returns errors as HTTP 200 with `[{"message": ...}]` — handled in `_api_error`.
 - Indicator records have no country id/region: use `countryiso3code`; region/income/aggregates come from `/country` (`data/bronze/worldbank/_countries.json`; aggregates have region `Aggregates` and are dropped in silver).
 - `SH.XPD.OOPC.TO.ZS` was removed from the API → `SH.XPD.OOPC.CH.ZS`. `SH_UHC_SCI` IS fetchable and is an annual series 2000–2023 (not a 2019 snapshot).
-- Re-ingest a subset: `python -m src.ingestion.worldbank --codes A,B [--force]`; status per indicator in `data/bronze/ingest_log.json` (WHO: `ingest_log_who.json`).
+- Re-ingest a subset: `python -m src.ingestion.worldbank --codes A,life_expectancy [--force]` (WB code or logical name; same for `who_gho`); status per indicator in `data/bronze/ingest_log.json` (WHO: `ingest_log_who.json`).
+- Ingest CLIs and `src.transform.quality` exit 1 on failure — don't wrap them in `|| true`; a red `make`/CI there is the signal.
+- WHO GHO: `$filter` is built server-side (catalog year range + optional `sex` per indicator) and `@odata.nextLink` is followed; don't fetch unfiltered.
 
 ## Data flow
 
@@ -33,7 +35,9 @@ Medallion pipeline over World Bank + WHO GHO global-health panel data (country �
 - DiD treatment: first year ≥ 2000 with a *sustained* crossing of 0.5 (before 2000 index composition changes). `always_treated` are excluded; `never_treated` requires the proxy observed in ≥ 50% of window years (unobserved microstates are not valid controls).
 - The naive DiD is negative because of a pre-existing convergence trend; report the trend-adjusted estimate (`staggered_detrended`) as the headline. Don't "fix" the negative TWFE by tweaking samples.
 - Models: time split train ≤ 2015 / valid 2016–19 (early stopping + conformal quantile) / test ≥ 2020. Never random splits. M3 (`milestone_high`) must not use `uhc_index` (label leakage) — enforced by `EXCLUDE_BY_TARGET` in `dataset.py`. Artefacts: `models/<name>_xgb.joblib`, `_lin.joblib`, `_eval.json`.
-- Life expectancy < 25 is real (Rwanda 1994, CAR, Somalia) — quality flags it as a warning, not an error.
+- Life expectancy < 25 and maternal mortality > 5000/100k are real crisis estimates (Rwanda 1994, CAR, South Sudan) — `quality.RANGES` holds only *physical* bounds; don't tighten them to "typical" ranges.
+- Hypothesis verdicts: robustness specs flagged `same_estimand` (FE without ECA, FE without year FE) can make a verdict "Inconclusiva"; the pooled spec is a different estimand and never does.
+- UHC proxy deliberately excludes out-of-pocket (tested inverted: SCI correlation drops 0.913 → 0.907; SCI measures service coverage, OOP is financial protection).
 - Drift: PSI/KS on observed values only; missing-rate change is a separate `missing_shift` flag.
 
 ## Notebooks

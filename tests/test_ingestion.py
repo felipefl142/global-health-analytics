@@ -81,3 +81,36 @@ def test_parse_who_keeps_countries_both_sexes():
     df = parse_who("NCDMORT3070", "ncd", raw)
     assert sorted(df["country_id"]) == ["ARG", "BRA"]
     assert df.loc[df.country_id == "BRA", "value"].item() == 20.0
+
+
+def test_who_segue_nextlink_e_filtra_no_servidor(monkeypatch):
+    from src.ingestion import who_gho
+
+    calls = []
+    pages = {
+        "first": {"value": [{"v": 1}, {"v": 2}], "@odata.nextLink": "http://api/NEXT"},
+        "http://api/NEXT": {"value": [{"v": 3}]},
+    }
+
+    def fake_get(url, retries, delay):
+        calls.append(url)
+        return pages["first"] if len(calls) == 1 else pages[url]
+
+    monkeypatch.setattr(who_gho, "_get_json", fake_get)
+    out = who_gho.fetch_indicator("http://api", {"code": "X", "sex": "SEX_BTSX"}, 1990, 2023)
+    assert [r["v"] for r in out["value"]] == [1, 2, 3]
+    assert "TimeDim%20ge%201990" in calls[0] and "SEX_BTSX" in calls[0]
+    assert calls[1] == "http://api/NEXT"
+
+
+def test_ingest_sai_com_erro_se_indicador_falha(monkeypatch, tmp_path):
+    from config import settings
+
+    monkeypatch.setattr(settings, "BRONZE_DIR", tmp_path / "bronze")
+    monkeypatch.setattr(settings, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(wb, "fetch_countries", lambda out_dir, force=False: 0)
+    monkeypatch.setattr(wb, "fetch_indicator",
+                        lambda code, s, e, pp: {"status": "error", "detail": "boom", "data": None})
+    monkeypatch.setattr(wb.time, "sleep", lambda s: None)
+    (tmp_path / "bronze" / "worldbank").mkdir(parents=True)
+    assert wb.main(["--codes", "life_expectancy"]) == 1   # aceita nome logico

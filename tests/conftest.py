@@ -32,7 +32,11 @@ def silver_long() -> pd.DataFrame:
     for i, c in enumerate(COUNTRIES):
         for t, y in enumerate(YEARS):
             level = i / (len(COUNTRIES) - 1) * 0.6 + t / len(YEARS) * 0.4  # 0..1
-            vals = {name: 10 + 90 * level + rng.normal(0, 1) for name in DEFAULT_COMPONENTS}
+            # escalas plausiveis por componente (percentuais limitados a 100)
+            scale = {"doctors_per_1000": 5, "nurses_per_1000": 12, "beds_per_1000": 8}
+            vals = {name: scale.get(name, 90) * (0.05 + 0.95 * level) + rng.normal(0, 0.05)
+                    for name in DEFAULT_COMPONENTS}
+            vals = {k: float(np.clip(v, 0, 100)) for k, v in vals.items()}
             vals["health_exp_per_capita"] = np.exp(3 + 5 * level)
             vals["life_expectancy"] = 50 + 30 * level + rng.normal(0, 0.5)
             vals["child_mortality"] = 150 - 140 * level + rng.normal(0, 2)

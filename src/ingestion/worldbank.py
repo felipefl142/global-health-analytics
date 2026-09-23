@@ -12,7 +12,9 @@ Principios:
 Uso:
     python -m src.ingestion.worldbank                 # todos os indicadores
     python -m src.ingestion.worldbank --force         # refazer tudo
-    python -m src.ingestion.worldbank --codes SP.DYN.LE00.IN,SH.DYN.MORT
+    python -m src.ingestion.worldbank --codes SP.DYN.LE00.IN,child_mortality
+
+Sai com codigo 1 se algum indicador pedido falhar (make/CI param em ingestao quebrada).
 """
 from __future__ import annotations
 
@@ -107,11 +109,12 @@ def fetch_countries(out_dir, force: bool = False) -> int:
     return len(data[1])
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true", help="refazer indicadores ja baixados")
-    ap.add_argument("--codes", type=str, default="", help="subconjunto de codigos (virgulas)")
-    args = ap.parse_args()
+    ap.add_argument("--codes", type=str, default="",
+                    help="subconjunto (virgulas): codigo WB ou nome logico")
+    args = ap.parse_args(argv)
 
     cfg = settings.load_indicators()
     start, end = settings.date_range(cfg)
@@ -120,7 +123,7 @@ def main() -> None:
 
     if args.codes:
         wanted = {c.strip() for c in args.codes.split(",") if c.strip()}
-        codes = {k: v for k, v in codes.items() if v in wanted}
+        codes = {k: v for k, v in codes.items() if v in wanted or k in wanted}
 
     settings.ensure_dirs()
     out_dir = settings.BRONZE_DIR / "worldbank"
@@ -165,7 +168,8 @@ def main() -> None:
 
     ok = sum(1 for c in codes.values() if log.get(c, {}).get("status") in ("ok", "cached"))
     print(f"\nConcluido: {ok}/{len(codes)} ok. Log: {log_path}")
+    return 0 if ok == len(codes) else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

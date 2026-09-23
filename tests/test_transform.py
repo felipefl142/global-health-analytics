@@ -78,3 +78,15 @@ def test_quality_checks_pass_on_synthetic(abt):
     rep = check_abt(abt)
     assert rep["ok"], rep["issues"]
     assert rep["duplicated_country_years"] == 0
+
+
+def test_range_checks_flag_impossible_values(abt):
+    bad = abt.copy()
+    bad.loc[bad.index[0], "sanitation_basic"] = 130.0
+    bad.loc[bad.index[1], "fertility"] = -1.0
+    rep = check_abt(bad)
+    assert not rep["ok"]
+    by = {r["indicator"]: r for r in rep["range_checks"]}
+    assert by["sanitation_basic"]["violations"] == 1
+    assert by["fertility"]["violations"] == 1
+    assert any("sanitation_basic" in i for i in rep["issues"])

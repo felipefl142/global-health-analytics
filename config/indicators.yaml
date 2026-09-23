@@ -83,13 +83,14 @@ covariates:
     name: "Population, total"
 
 # ---- Fonte 2: WHO Global Health Observatory (OData API) ----
-# Enriquecimento (nao entra no proxy UHC). Filtro: paises, ambos os sexos.
+# Enriquecimento (nao entra no proxy UHC). $filter OData: anos + sexo (se `sex`).
 who_gho:
   api_base: "https://ghoapi.azureedge.net/api"
   indicators:
     ncd_mortality_30_70:
       code: "NCDMORT3070"
       name: "Probability (%) of dying age 30-70 from CVD, cancer, diabetes or CRD"
+      sex: "SEX_BTSX"   # serie tem dimensao de sexo: filtra ambos os sexos no servidor
     maternal_mortality:
       code: "MDG_0000000026"
       name: "Maternal mortality ratio (per 100 000 live births)"

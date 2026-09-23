@@ -23,10 +23,14 @@ from sklearn.inspection import permutation_importance
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (
     accuracy_score,
+    brier_score_loss,
     f1_score,
+    log_loss,
     mean_absolute_error,
     mean_squared_error,
+    precision_score,
     r2_score,
+    recall_score,
     roc_auc_score,
 )
 from sklearn.pipeline import make_pipeline
@@ -61,11 +65,29 @@ def _eval_regr(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     }
 
 
+def expected_calibration_error(y_true, y_prob, n_bins: int = 10) -> float:
+    """ECE: media ponderada de |freq. observada - prob. media| em bins de probabilidade."""
+    y_true, y_prob = np.asarray(y_true, dtype=float), np.asarray(y_prob, dtype=float)
+    bins = np.minimum((y_prob * n_bins).astype(int), n_bins - 1)
+    ece = 0.0
+    for b in np.unique(bins):
+        m = bins == b
+        ece += m.mean() * abs(y_true[m].mean() - y_prob[m].mean())
+    return float(ece)
+
+
 def _eval_clf(y_true: np.ndarray, y_pred_proba: np.ndarray) -> dict:
     y_pred = (y_pred_proba >= 0.5).astype(int)
     out = {
         "accuracy": round(float(accuracy_score(y_true, y_pred)), 3),
         "f1": round(float(f1_score(y_true, y_pred, zero_division=0)), 3),
+        "precision": round(float(precision_score(y_true, y_pred, zero_division=0)), 3),
+        "recall": round(float(recall_score(y_true, y_pred, zero_division=0)), 3),
+        # calibracao: probabilidades usadas na API/dashboard precisam ser confiaveis
+        "brier": round(float(brier_score_loss(y_true, y_pred_proba)), 4),
+        "log_loss": round(float(log_loss(y_true, y_pred_proba, labels=[0, 1])), 4),
+        "ece": round(expected_calibration_error(y_true, y_pred_proba), 4),
+        "n": int(len(y_true)),
     }
     if len(np.unique(y_true)) > 1:
         out["auc"] = round(float(roc_auc_score(y_true, y_pred_proba)), 3)

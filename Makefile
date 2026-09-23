@@ -3,7 +3,7 @@ PY      := .venv/bin/python
 UV      := .venv/bin/uvicorn
 ST      := .venv/bin/streamlit
 
-.PHONY: help install ingest silver gold abt features train abtest hypotheses notebooks \
+.PHONY: help install ingest silver gold abt features eda train abtest hypotheses notebooks \
         feast-up feast-materialize serve dashboard test lint drift all clean
 
 help:
@@ -37,6 +37,9 @@ abtest:             ## A/B simulado + causal DiD
 	$(PY) -m src.abtesting.simulate_ab
 	$(PY) -m src.abtesting.causal_did
 
+eda:                ## Resumo de EDA -> reports/eda_summary.json
+	$(PY) -m src.analysis.eda
+
 hypotheses:         ## Testes de hipotese H1-H6 -> reports/hypotheses.json
 	$(PY) -m src.analysis.hypotheses
 
@@ -65,7 +68,7 @@ drift:              ## Monitoramento de drift
 	$(PY) -m src.monitoring.drift
 
 # etapas em sequencia explicita: pre-requisitos de 'all' rodariam em paralelo com make -j
-PIPELINE := ingest silver gold train abtest hypotheses drift
+PIPELINE := ingest silver gold eda train abtest hypotheses drift
 all:                ## Pipeline completo (dados -> modelos -> experimentos -> drift)
 	@for step in $(PIPELINE); do $(MAKE) --no-print-directory $$step || exit 1; done
 

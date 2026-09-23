@@ -287,10 +287,14 @@ rows = []
 for h in hs:
     rb = h.extra.get("robustness")
     if not rb: continue
-    rows.append({"id": h.id, "FE país+ano (principal)": h.effect,
-                 "pooled (entre+dentro)": rb["pooled_between_within"]["coef"],
-                 "FE sem Europa/Ásia Central": rb["fe_sem_europa_asia_central"]["coef"]})
-pd.DataFrame(rows).set_index("id").round(2)"""),
+    fmt = lambda v: f"{v['coef']:+.2f}{'*' if v['p'] < 0.05 else ''}"
+    rows.append({"id": h.id, "FE país+ano (principal)": f"{h.effect:+.2f}",
+                 "FE sem Europa/Ásia Central": fmt(rb["fe_sem_europa_asia_central"]),
+                 "FE país, sem FE de ano": fmt(rb["fe_pais_sem_fe_ano"]),
+                 "pooled (entre+dentro)": fmt(rb["pooled_between_within"])})
+print("* = p < 0.05. As duas primeiras colunas alternativas medem o mesmo estimando (dentro do país):")
+print("  se uma delas inverter o sinal com significância, o veredito vira 'Inconclusiva'.")
+pd.DataFrame(rows).set_index("id")"""),
     code("""\
 fig, ax = plt.subplots(figsize=(9, 3.8))
 labels, eff, lo, hi = [], [], [], []
@@ -338,8 +342,11 @@ for h in hs:
   Mas, dentro de um mesmo país e descontados choques globais e o PIB, aumentos de densidade médica
   **não** vêm com ganhos de LE (coeficiente negativo, mesmo sem a transição pós-soviética). A
   associação clássica é **entre países** (desenvolvimento), não um efeito marginal de mais médicos.
-- **H3 — não rejeitada** após Holm: o gasto público (% PIB) dentro do país não tem efeito detectável
-  sobre LE.
+  (Sem FE de ano o sinal fica positivo, mas não significativo — por isso o veredito se mantém.)
+- **H3 — inconclusiva (sensível à especificação).** Com FE de ano, o gasto público (% PIB) tem
+  coeficiente negativo e não significativo após Holm; sem FE de ano ele fica **positivo e
+  significativo**. A associação positiva vem de tendências globais comuns (LE e gasto sobem juntos
+  no mundo todo), não de variação específica do país.
 - **H5 — não rejeitada.** O DiD ingênuo dá efeito *negativo*, mas o event study mostra uma
   tendência diferencial **pré-existente** (convergência dos países mais pobres). Com ajuste de
   tendência, o ATT é ~0 (IC inclui 0): cruzar o limiar do proxy não acelera a LE de forma

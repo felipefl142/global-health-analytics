@@ -19,11 +19,11 @@ Pipeline reprodutível **medallion** (bronze → silver → gold), EDA e testes 
 | **H4** urbanização | −28/1000 por +1 DP, dentro do país (FE país+ano, controle PIB). ✅ |
 | **H6** vacina sarampo | −10/1000 por +1 DP, dentro do país. ✅ |
 | **H1** médicos → LE | Entre países: +1.8 ano/DP. **Dentro do país: −1.1** (sinal oposto, persiste sem Europa/Ásia Central). A associação clássica é de desenvolvimento, não efeito marginal. |
-| **H3** gasto público → LE | Não significativo após Holm. |
+| **H3** gasto público → LE | **Inconclusiva**: −0.43 com FE de ano (n.s. após Holm), mas +0.46 (p = 0.01) sem FE de ano — a associação positiva vem de tendências globais comuns, não da variação do país. |
 | **H5 / DiD causal** | TWFE e DiD escalonado dão efeito **negativo** (−1.6 / −0.8 ano), mas o event study mostra tendência **pré-existente** (convergência dos mais pobres). Com ajuste de tendência: **+0.07 ano, IC95 [−0.53, 0.62]** — sem efeito detectável. Controle sintético (China, Vietnã) concorda (placebo p = 0.17 / 0.62). |
 | **A/B simulado** | Randomizar +20% nos insumos entre ~190 países: efeito real (via M1) +1.2 ano vs MDE de 3.4 anos (1.6 com CUPED, que reduz ~80% da variância). **Subdimensionado** — poder empírico ~15% → ~60% com CUPED. |
-| **Modelos** (teste 2020–23) | M1 LE: R² 0.85 (RMSE 2.95); M2 mortalidade <5: R² 0.77; M3 marco alto: AUC 0.99. XGBoost > baseline linear em todos. |
-| **Drift** | Valor: só PIB (US$ correntes → inflação) e fertilidade. Performance: RMSE de 2022 > 1.5× validação (pós-COVID). Intervalo 90% do M1 cobre só 77% em 2020–23. |
+| **Modelos** (teste 2020–23) | M1 LE: R² 0.85 (RMSE 2.95); M2 mortalidade <5: R² 0.77; M3 marco alto: AUC 0.99, **bem calibrado** (Brier 0.031, ECE 0.021). XGBoost > baseline linear em todos. |
+| **Drift** | Valor: só PIB (US$ correntes → inflação) e fertilidade. Performance: RMSE de 2022 > 1.5× validação (pós-COVID); AUC do M3 estável (0.98–1.00). Intervalo 90% do M1 cobre só 77% em 2020–23. |
 
 Detalhes e gráficos nos notebooks [`01_eda`](notebooks/01_eda.ipynb) ·
 [`02_visualization`](notebooks/02_visualization.ipynb) ·
@@ -74,13 +74,14 @@ Requer Python ≥ 3.11 (desenvolvido em 3.14). Docker só é necessário para o 
 make install            # .venv + requirements.txt
 cp .env.example .env    # opcional; ONLINE_STORE_TYPE=sqlite dispensa Redis
 
-make all                # ingest -> silver -> gold -> train -> abtest -> hypotheses -> drift
+make all                # ingest -> silver -> gold -> eda -> train -> abtest -> hypotheses -> drift
 make notebooks          # (re)executa os notebooks 01-05
 make test lint
 ```
 
 A ingestão completa leva ~3–5 min (a API do World Bank é lenta e tem rate limit; é
 idempotente — rode de novo e só o que falhou é rebaixado; veja `data/bronze/ingest_log.json`).
+Ingestão e checagens de qualidade saem com código ≠ 0 em falha, então `make`/CI param ali.
 
 ### Serving
 
@@ -122,7 +123,15 @@ Sem online store disponível a API cai automaticamente para a ABT gold
 - **Intervalo de predição**: conformal split (quantil 90% do |resíduo| na validação); a API
   devolve também a cobertura empírica medida no teste.
 - **Drift**: PSI/KS só em valores observados; mudança de cobertura (missing) é sinal
-  separado — senão séries que começam em 2000 pareceriam drift.
+  separado — senão séries que começam em 2000 pareceriam drift. Performance: RMSE por ano
+  (regressões) e AUC/Brier por ano (M3).
+- **Hipóteses robustas à especificação**: além do principal (FE país+ano), cada teste de painel
+  roda FE sem Europa/Ásia Central e FE sem efeito de ano; se uma delas inverte o sinal com
+  significância, o veredito é "inconclusiva". O pooled é reportado, mas mede outro estimando.
+- **Qualidade**: faixas físicas por indicador (percentuais em 0–100 etc.); valores extremos
+  reais de crises (LE de Ruanda 1994, mortalidade materna > 5000/100 mil) não são erro.
+- **Proxy UHC sem out-of-pocket**: testado invertido (proteção financeira) — correlação com o
+  SCI não melhora (0.913 → 0.907) porque o SCI mede cobertura de *serviços*.
 
 ## Limitações
 
@@ -152,7 +161,7 @@ Sem online store disponível a API cai automaticamente para a ABT gold
 │   └── utils/         db.py (DuckDB), io.py
 ├── notebooks/         build_notebooks.py -> 01..05.ipynb (executados)
 ├── dashboard/         app.py (Streamlit)
-├── reports/           hypotheses.json, ab_simulation.json, causal_did.json, drift_report.json
+├── reports/           eda_summary.json, hypotheses.json, ab_simulation.json, causal_did.json, drift_report.json
 ├── tests/             ingestão, transform, modelos, análise, API, drift, dashboard
 └── .github/workflows/ ci.yml (lint + testes + smoke), monitoring.yml (semanal)
 ```

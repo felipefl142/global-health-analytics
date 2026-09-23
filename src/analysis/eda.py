@@ -1,8 +1,12 @@
 """Funcoes de EDA reutilizadas pelos notebooks (F3/F4) e pelo dashboard (F10).
 
 Todas recebem a ABT (gold) e devolvem DataFrames prontos p/ tabela ou grafico.
+`python -m src.analysis.eda` grava reports/eda_summary.json (resumo versionado:
+cobertura, missing por renda, correlacoes com os alvos, choques, COVID, outliers).
 """
 from __future__ import annotations
+
+import json
 
 import numpy as np
 import pandas as pd
@@ -117,3 +121,45 @@ def latest_snapshot(abt: pd.DataFrame, col: str) -> pd.DataFrame:
     df = abt.dropna(subset=[col]).sort_values("year")
     return df.groupby("country_id").tail(1)[["country_id", "country_name", "region", "income",
                                               "year", col]]
+
+
+KEY_COLS = ["life_expectancy", "child_mortality", "uhc_index", "uhc_sci", "gdp_per_capita",
+            "health_exp_per_capita", "doctors_per_1000", "nurses_per_1000", "beds_per_1000",
+            "sanitation_basic", "water_basic", "measles_imm_pct", "fertility", "urban_pct"]
+
+
+def summary(abt: pd.DataFrame, corr_year: int = 2019) -> dict:
+    """Resumo de EDA serializavel (reports/eda_summary.json)."""
+    from src.features.uhc_index import validate_against_sci
+
+    cols = [c for c in KEY_COLS if c in abt.columns]
+    corr = correlations(abt, cols, year=corr_year)
+    targets = [t for t in ("life_expectancy", "child_mortality") if t in corr.columns]
+    extreme = {c: int(len(outliers_iqr(abt, c))) for c in cols}
+    return {
+        "shape": {"rows": int(len(abt)), "countries": int(abt["country_id"].nunique()),
+                  "years": [int(abt["year"].min()), int(abt["year"].max())]},
+        "coverage": coverage_by_indicator(abt).to_dict(orient="records"),
+        "missing_by_income_pct": missingness_by_income(abt, cols).to_dict(orient="index"),
+        f"spearman_with_targets_{corr_year}": corr[targets].drop(index=targets).round(3)
+        .to_dict(orient="index"),
+        "uhc_proxy_vs_sci": validate_against_sci(abt),
+        "extreme_outliers_iqr3": {k: v for k, v in extreme.items() if v},
+        "le_shocks_top10": yoy_shocks(abt).head(10).round(2).to_dict(orient="records"),
+        "covid_le_by_region": covid_impact(abt).to_dict(orient="index"),
+    }
+
+
+def main() -> None:
+    from config import settings
+    from src.utils.io import load_parquet
+
+    settings.ensure_dirs()
+    rep = summary(load_parquet("gold", "abt_country_year"))
+    out = settings.REPORTS_DIR / "eda_summary.json"
+    out.write_text(json.dumps(rep, indent=2, ensure_ascii=False, default=float))
+    print(f"EDA: {rep['shape']} proxy vs SCI {rep['uhc_proxy_vs_sci']} -> {out}")
+
+
+if __name__ == "__main__":
+    main()
