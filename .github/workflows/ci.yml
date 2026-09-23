@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main, "restart/**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Instala dependencias
+        run: pip install -r requirements.txt
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Testes (sem rede; paginas do dashboard pulam sem dados)
+        run: pytest tests/ -q
+
+  smoke-pipeline:
+    # ingest de uma amostra real da API -> silver -> gold -> treino -> drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: test
+    env:
+      ONLINE_STORE_TYPE: sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ingestao (amostra de indicadores)
+        run: >
+          python -m src.ingestion.worldbank --codes
+          SP.DYN.LE00.IN,SH.DYN.MORT,SH.MED.PHYS.ZS,SH.MED.NUMW.P3,SH.XPD.CHEX.PC.CD,SH.STA.BASS.ZS,SH.H2O.BASW.ZS,SH.IMM.MEAS,SH.IMM.IDPT,NY.GDP.PCAP.CD,SP.DYN.TFRT.IN,SP.URB.TOTL.IN.ZS
+      - name: Silver + gold + qualidade
+        run: |
+          python -m src.transform.bronze_to_silver
+          python -m src.transform.build_abt
+          python -m src.transform.quality
+      - name: Treino + feature store + drift
+        run: |
+          python -m src.modeling.train
+          python -m src.serving.feast_cli materialize
+          python -m src.monitoring.drift --markdown "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,439 @@
+{
+  "shape": {
+    "rows": 7378,
+    "countries": 217,
+    "years": [
+      1990,
+      2023
+    ]
+  },
+  "coverage": [
+    {
+      "indicator": "fertility",
+      "pct_filled": 100.0,
+      "countries": 217,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "life_expectancy",
+      "pct_filled": 100.0,
+      "countries": 217,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "population",
+      "pct_filled": 100.0,
+      "countries": 217,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "urban_pct",
+      "pct_filled": 100.0,
+      "countries": 217,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "gdp_per_capita",
+      "pct_filled": 95.1,
+      "countries": 214,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "child_mortality",
+      "pct_filled": 90.3,
+      "countries": 196,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "maternal_mortality",
+      "pct_filled": 89.4,
+      "countries": 194,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "dpt_imm_pct",
+      "pct_filled": 87.2,
+      "countries": 193,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "measles_imm_pct",
+      "pct_filled": 87.1,
+      "countries": 193,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "uhc_index",
+      "pct_filled": 74.2,
+      "countries": 193,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "water_basic",
+      "pct_filled": 67.9,
+      "countries": 214,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "sanitation_basic",
+      "pct_filled": 67.4,
+      "countries": 214,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "tb_incidence",
+      "pct_filled": 63.1,
+      "countries": 195,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "uhc_sci",
+      "pct_filled": 62.8,
+      "countries": 193,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "out_of_pocket",
+      "pct_filled": 61.5,
+      "countries": 193,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "health_exp_gdp",
+      "pct_filled": 61.5,
+      "countries": 193,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "health_exp_per_capita",
+      "pct_filled": 61.5,
+      "countries": 193,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "public_health_exp_gdp",
+      "pct_filled": 61.5,
+      "countries": 193,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "ncd_mortality_30_70",
+      "pct_filled": 55.2,
+      "countries": 185,
+      "first_year": 2000,
+      "last_year": 2021
+    },
+    {
+      "indicator": "doctors_per_1000",
+      "pct_filled": 52.5,
+      "countries": 205,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "beds_per_1000",
+      "pct_filled": 50.8,
+      "countries": 197,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "water_safely",
+      "pct_filled": 48.4,
+      "countries": 151,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "sanitation_safely",
+      "pct_filled": 46.5,
+      "countries": 146,
+      "first_year": 2000,
+      "last_year": 2023
+    },
+    {
+      "indicator": "nurses_per_1000",
+      "pct_filled": 46.2,
+      "countries": 198,
+      "first_year": 1990,
+      "last_year": 2023
+    },
+    {
+      "indicator": "road_traffic_deaths",
+      "pct_filled": 2.6,
+      "countries": 193,
+      "first_year": 2021,
+      "last_year": 2021
+    }
+  ],
+  "missing_by_income_pct": {
+    "life_expectancy": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.0
+    },
+    "child_mortality": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 24.4
+    },
+    "uhc_index": {
+      "Low income": 24.6,
+      "Lower middle income": 19.6,
+      "Upper middle income": 17.0,
+      "High income": 35.6
+    },
+    "uhc_sci": {
+      "Low income": 29.4,
+      "Lower middle income": 29.4,
+      "Upper middle income": 30.6,
+      "High income": 48.3
+    },
+    "gdp_per_capita": {
+      "Low income": 10.7,
+      "Lower middle income": 0.3,
+      "Upper middle income": 1.6,
+      "High income": 8.0
+    },
+    "health_exp_per_capita": {
+      "Low income": 36.0,
+      "Lower middle income": 31.4,
+      "Upper middle income": 31.6,
+      "High income": 47.9
+    },
+    "doctors_per_1000": {
+      "Low income": 57.4,
+      "Lower middle income": 56.8,
+      "Upper middle income": 42.1,
+      "High income": 43.2
+    },
+    "nurses_per_1000": {
+      "Low income": 66.1,
+      "Lower middle income": 64.6,
+      "Upper middle income": 48.4,
+      "High income": 47.9
+    },
+    "beds_per_1000": {
+      "Low income": 72.8,
+      "Lower middle income": 60.4,
+      "Upper middle income": 39.9,
+      "High income": 42.5
+    },
+    "sanitation_basic": {
+      "Low income": 31.8,
+      "Lower middle income": 31.2,
+      "Upper middle income": 32.6,
+      "High income": 33.6
+    },
+    "water_basic": {
+      "Low income": 31.5,
+      "Lower middle income": 31.2,
+      "Upper middle income": 32.7,
+      "High income": 32.5
+    },
+    "measles_imm_pct": {
+      "Low income": 4.9,
+      "Lower middle income": 1.4,
+      "Upper middle income": 3.6,
+      "High income": 27.9
+    },
+    "fertility": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.0
+    },
+    "urban_pct": {
+      "Low income": 0.0,
+      "Lower middle income": 0.0,
+      "Upper middle income": 0.0,
+      "High income": 0.0
+    }
+  },
+  "spearman_with_targets_2019": {
+    "uhc_index": {
+      "life_expectancy": 0.852,
+      "child_mortality": -0.911
+    },
+    "uhc_sci": {
+      "life_expectancy": 0.861,
+      "child_mortality": -0.851
+    },
+    "gdp_per_capita": {
+      "life_expectancy": 0.862,
+      "child_mortality": -0.864
+    },
+    "health_exp_per_capita": {
+      "life_expectancy": 0.849,
+      "child_mortality": -0.869
+    },
+    "doctors_per_1000": {
+      "life_expectancy": 0.769,
+      "child_mortality": -0.838
+    },
+    "nurses_per_1000": {
+      "life_expectancy": 0.756,
+      "child_mortality": -0.833
+    },
+    "beds_per_1000": {
+      "life_expectancy": 0.464,
+      "child_mortality": -0.652
+    },
+    "sanitation_basic": {
+      "life_expectancy": 0.882,
+      "child_mortality": -0.86
+    },
+    "water_basic": {
+      "life_expectancy": 0.858,
+      "child_mortality": -0.855
+    },
+    "measles_imm_pct": {
+      "life_expectancy": 0.529,
+      "child_mortality": -0.543
+    },
+    "fertility": {
+      "life_expectancy": -0.79,
+      "child_mortality": 0.818
+    },
+    "urban_pct": {
+      "life_expectancy": 0.626,
+      "child_mortality": -0.63
+    }
+  },
+  "uhc_proxy_vs_sci": {
+    "n": 4607,
+    "pearson": 0.913,
+    "spearman": 0.896
+  },
+  "extreme_outliers_iqr3": {
+    "life_expectancy": 8,
+    "child_mortality": 74,
+    "gdp_per_capita": 234,
+    "health_exp_per_capita": 437,
+    "beds_per_1000": 8,
+    "water_basic": 7,
+    "measles_imm_pct": 3
+  },
+  "le_shocks_top10": [
+    {
+      "country_name": "Central African Republic",
+      "region": "Sub-Saharan Africa",
+      "year": 2009,
+      "life_expectancy": 14.66,
+      "delta": -35.21
+    },
+    {
+      "country_name": "Rwanda",
+      "region": "Sub-Saharan Africa",
+      "year": 1994,
+      "life_expectancy": 12.16,
+      "delta": -30.78
+    },
+    {
+      "country_name": "Somalia, Fed. Rep.",
+      "region": "Sub-Saharan Africa",
+      "year": 1991,
+      "life_expectancy": 25.42,
+      "delta": -21.48
+    },
+    {
+      "country_name": "Central African Republic",
+      "region": "Sub-Saharan Africa",
+      "year": 2022,
+      "life_expectancy": 18.82,
+      "delta": -21.46
+    },
+    {
+      "country_name": "Central African Republic",
+      "region": "Sub-Saharan Africa",
+      "year": 2019,
+      "life_expectancy": 31.53,
+      "delta": -20.77
+    },
+    {
+      "country_name": "Bosnia and Herzegovina",
+      "region": "Europe & Central Asia",
+      "year": 1992,
+      "life_expectancy": 51.97,
+      "delta": -19.85
+    },
+    {
+      "country_name": "Somalia, Fed. Rep.",
+      "region": "Sub-Saharan Africa",
+      "year": 2011,
+      "life_expectancy": 32.45,
+      "delta": -16.45
+    },
+    {
+      "country_name": "Haiti",
+      "region": "Latin America & Caribbean",
+      "year": 2010,
+      "life_expectancy": 45.58,
+      "delta": -16.12
+    },
+    {
+      "country_name": "South Sudan",
+      "region": "Sub-Saharan Africa",
+      "year": 1998,
+      "life_expectancy": 19.05,
+      "delta": -14.02
+    },
+    {
+      "country_name": "South Sudan",
+      "region": "Sub-Saharan Africa",
+      "year": 1995,
+      "life_expectancy": 31.51,
+      "delta": -13.35
+    }
+  ],
+  "covid_le_by_region": {
+    "Middle East, North Africa, Afghanistan & Pakistan": {
+      "drop_2019_2021": -1.86,
+      "recovery_2021_2023": 2.16
+    },
+    "Latin America & Caribbean": {
+      "drop_2019_2021": -1.82,
+      "recovery_2021_2023": 2.62
+    },
+    "Europe & Central Asia": {
+      "drop_2019_2021": -1.28,
+      "recovery_2021_2023": 1.54
+    },
+    "South Asia": {
+      "drop_2019_2021": -1.22,
+      "recovery_2021_2023": 2.48
+    },
+    "North America": {
+      "drop_2019_2021": -0.71,
+      "recovery_2021_2023": 0.56
+    },
+    "Sub-Saharan Africa": {
+      "drop_2019_2021": -0.39,
+      "recovery_2021_2023": 1.69
+    },
+    "East Asia & Pacific": {
+      "drop_2019_2021": -0.18,
+      "recovery_2021_2023": 0.78
+    }
+  }
+}

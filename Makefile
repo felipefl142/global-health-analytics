@@ -3,7 +3,7 @@ PY      := .venv/bin/python
 UV      := .venv/bin/uvicorn
 ST      := .venv/bin/streamlit
 
-.PHONY: help install ingest silver gold abt features train abtest \
+.PHONY: help install ingest silver gold abt features eda train abtest hypotheses notebooks \
         feast-up feast-materialize serve dashboard test lint drift all clean
 
 help:
@@ -14,18 +14,20 @@ install:            ## Cria venv e instala dependencias
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r requirements.txt
 
-ingest:             ## Ingestao World Bank API -> bronze
+ingest:             ## Ingestao World Bank API + WHO GHO -> bronze
 	$(PY) -m src.ingestion.worldbank
+	$(PY) -m src.ingestion.who_gho
 
 silver:             ## bronze -> silver (limpo/estandarizado)
 	$(PY) -m src.transform.bronze_to_silver
 
-gold:               ## silver -> gold (ABT + proxy UHC)
+gold:               ## silver -> gold (ABT + proxy UHC) + checks de qualidade
 	$(PY) -m src.transform.build_abt
+	$(PY) -m src.transform.quality
 
 abt: silver gold    ## Gera a camada gold/ABT completa
 
-features:           ## (re)constroi o proxy UHC e feature views
+features:           ## Inspeciona o proxy UHC (validacao vs SCI, tratados)
 	$(PY) -m src.features.uhc_index
 
 train:              ## Treina M1/M2/M3
@@ -35,10 +37,19 @@ abtest:             ## A/B simulado + causal DiD
 	$(PY) -m src.abtesting.simulate_ab
 	$(PY) -m src.abtesting.causal_did
 
+eda:                ## Resumo de EDA -> reports/eda_summary.json
+	$(PY) -m src.analysis.eda
+
+hypotheses:         ## Testes de hipotese H1-H6 -> reports/hypotheses.json
+	$(PY) -m src.analysis.hypotheses
+
+notebooks:          ## Gera e executa os notebooks 01-05 (com outputs)
+	$(PY) notebooks/build_notebooks.py
+
 redis-up:           ## Sobe Redis (online store) via docker-compose
 	docker compose up -d redis
 
-feast-materialize:  ## Materializa offline (DuckDB) -> online (Redis)
+feast-materialize:  ## gold -> Feast offline (DuckDB) -> online (Redis/SQLite)
 	$(PY) -m src.serving.feast_cli materialize
 
 serve:              ## API FastAPI
@@ -56,7 +67,10 @@ lint:               ## Lint (ruff)
 drift:              ## Monitoramento de drift
 	$(PY) -m src.monitoring.drift
 
-all: ingest silver gold train abtest   ## Pipeline completo (dados -> modelos -> experimentos)
+# etapas em sequencia explicita: pre-requisitos de 'all' rodariam em paralelo com make -j
+PIPELINE := ingest silver gold eda train abtest hypotheses drift
+all:                ## Pipeline completo (dados -> modelos -> experimentos -> drift)
+	@for step in $(PIPELINE); do $(MAKE) --no-print-directory $$step || exit 1; done
 
 clean:              ## Remove camadas geradas e modelos
 	rm -rf data/bronze/* data/silver/* data/gold/* data/*.duckdb models/* .feast

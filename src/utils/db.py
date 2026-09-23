@@ -12,9 +12,9 @@ def connect(data_dir: Path | str = settings.DATA_DIR) -> duckdb.DuckDBPyConnecti
     """Conexao DuckDB com os diretorios de camadas registrados como schemas."""
     data_dir = Path(data_dir)
     con = duckdb.connect(str(data_dir / "catalog.duckdb"))
-    con.execute(f"CREATE SCHEMA IF NOT EXISTS bronze")
-    con.execute(f"CREATE SCHEMA IF NOT EXISTS silver")
-    con.execute(f"CREATE SCHEMA IF NOT EXISTS gold")
+    con.execute("CREATE SCHEMA IF NOT EXISTS bronze")
+    con.execute("CREATE SCHEMA IF NOT EXISTS silver")
+    con.execute("CREATE SCHEMA IF NOT EXISTS gold")
     # Views que apontam para os parquets (se existirem)
     _attach_parquet(con, "silver", data_dir / "silver")
     _attach_parquet(con, "gold", data_dir / "gold")
@@ -31,7 +31,7 @@ def _attach_parquet(con: duckdb.DuckDBPyConnection, schema: str, folder: Path) -
         )
 
 
-def query(sql: str, data_dir: Path | str = settings.DATA_DIR) -> "object":
+def query(sql: str, data_dir: Path | str = settings.DATA_DIR) -> object:
     con = connect(data_dir)
     try:
         return con.execute(sql).fetchdf()

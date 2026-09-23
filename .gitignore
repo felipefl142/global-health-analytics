@@ -17,6 +17,7 @@ data/silver/**
 data/gold/**
 data/*.duckdb
 data/*.db
+data/monitoring/
 !data/**/.gitkeep
 
 # Modelos treinados

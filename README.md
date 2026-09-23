@@ -1,191 +1,167 @@
 # global-health-analytics
 
-Plataforma de analytics + causal A/B sobre um painel público de saúde global
-(Who/World Bank) — país × ano, 1990–2023, 200+ países.
+Plataforma de analytics e inferência causal sobre um painel público de saúde global
+(**World Bank + WHO GHO**): país × ano, 1990–2023, 217 países.
 
-Pipeline reprodutível no padrão **medallion** (bronze → silver → gold), com
-predição (3 modelos) e a base pronta para análise causal (DiD) sobre o tema
-central: **expansão de cobertura UHC → expectativa de vida**.
+Pipeline reprodutível **medallion** (bronze → silver → gold), EDA e testes de hipótese,
+3 modelos XGBoost, A/B simulado + DiD causal, e serving em produção
+(Feast + FastAPI + Streamlit + CI/CD + monitoramento de drift). Pergunta central:
+**expandir a cobertura de saúde (UHC) aumenta a expectativa de vida?**
 
-> Roadmap completo com critérios de aceitação: [PLAN.md](PLAN.md). Convenções
-> para agentes: [AGENTS.md](AGENTS.md).
+> Roadmap e decisões: [PLAN.md](PLAN.md) · Convenções p/ agentes: [AGENTS.md](AGENTS.md)
+
+## Principais resultados
+
+| | Resultado |
+|---|---|
+| **Proxy UHC** | Índice 0–1 construído dos insumos (médicos, enfermeiros, leitos, gasto, saneamento, água, vacinas). Correlação com o SCI oficial da WHO: **Pearson 0.91** (n = 4 607 país-anos). |
+| **H2** saneamento > 80% | Mortalidade <5 **43/1000 menor** (mediana; IC95 −49 a −36). Ajustado por PIB: −25/1000. ✅ |
+| **H4** urbanização | −28/1000 por +1 DP, dentro do país (FE país+ano, controle PIB). ✅ |
+| **H6** vacina sarampo | −10/1000 por +1 DP, dentro do país. ✅ |
+| **H1** médicos → LE | Entre países: +1.8 ano/DP. **Dentro do país: −1.1** (sinal oposto, persiste sem Europa/Ásia Central). A associação clássica é de desenvolvimento, não efeito marginal. |
+| **H3** gasto público → LE | **Inconclusiva**: −0.43 com FE de ano (n.s. após Holm), mas +0.46 (p = 0.01) sem FE de ano — a associação positiva vem de tendências globais comuns, não da variação do país. |
+| **H5 / DiD causal** | TWFE e DiD escalonado dão efeito **negativo** (−1.6 / −0.8 ano), mas o event study mostra tendência **pré-existente** (convergência dos mais pobres). Com ajuste de tendência: **+0.07 ano, IC95 [−0.53, 0.62]** — sem efeito detectável. Controle sintético (China, Vietnã) concorda (placebo p = 0.17 / 0.62). |
+| **A/B simulado** | Randomizar +20% nos insumos entre ~190 países: efeito real (via M1) +1.2 ano vs MDE de 3.4 anos (1.6 com CUPED, que reduz ~80% da variância). **Subdimensionado** — poder empírico ~15% → ~60% com CUPED. |
+| **Modelos** (teste 2020–23) | M1 LE: R² 0.85 (RMSE 2.95); M2 mortalidade <5: R² 0.77; M3 marco alto: AUC 0.99, **bem calibrado** (Brier 0.031, ECE 0.021). XGBoost > baseline linear em todos. |
+| **Drift** | Valor: só PIB (US$ correntes → inflação) e fertilidade. Performance: RMSE de 2022 > 1.5× validação (pós-COVID); AUC do M3 estável (0.98–1.00). Intervalo 90% do M1 cobre só 77% em 2020–23. |
+
+Detalhes e gráficos nos notebooks [`01_eda`](notebooks/01_eda.ipynb) ·
+[`02_visualization`](notebooks/02_visualization.ipynb) ·
+[`03_hypothesis_testing`](notebooks/03_hypothesis_testing.ipynb) ·
+[`04_modeling`](notebooks/04_modeling.ipynb) · [`05_ab_causal`](notebooks/05_ab_causal.ipynb).
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+  WB[World Bank API v2] --> B[(bronze<br/>JSON raw)]
+  WHO[WHO GHO OData] --> B
+  B --> S[(silver<br/>indicators_long<br/>countries_dim)]
+  S --> G[(gold<br/>abt_country_year<br/>+ proxy UHC + timing DiD)]
+  G --> NB[notebooks 01-05<br/>EDA · hipóteses · causal]
+  G --> M[XGBoost M1/M2/M3<br/>models/*.joblib]
+  G --> R[reports/*.json<br/>hipóteses · A/B · DiD · drift]
+  G --> F[Feast<br/>offline DuckDB]
+  F --> O[(online store<br/>Redis ou SQLite)]
+  O --> API[FastAPI /predict]
+  M --> API
+  M --> D[Streamlit dashboard]
+  R --> D
+  R --> API
+  API --> L[log de predições] --> DR[drift PSI/KS]
+```
 
 ## Stack
 
 | Camada | Tecnologia |
 |---|---|
-| Ingestão | `requests`/`urllib` (World Bank API v2) → JSON raw |
-| Warehouse | DuckDB (catálogo com views sobre Parquet) |
-| Medallion | `data/bronze` (raw) → `data/silver` (limpo/long) → `data/gold` (ABT wide) |
-| Feature engineering | Proxy UHC 0..1 + timing de tratamento p/ DiD |
-| Modelos | scikit-learn + LightGBM + SHAP (artefatos `.joblib` + relatórios JSON) |
-| Orquestração | Makefile + docker-compose (Redis, p/ serving futuro) |
-| Plano de serving | Feast (offline=DuckDB, online=Redis) + FastAPI + Streamlit + drift PSI/KS |
+| Ingestão | World Bank API v2 (paginada) + WHO GHO OData → JSON bruto |
+| Warehouse | DuckDB (views sobre Parquet, `src/utils/db.py`) |
+| Medallion | `data/bronze` → `data/silver` → `data/gold` (ABT wide) |
+| Análise | pandas, statsmodels, linearmodels (PanelOLS), scipy |
+| Modelos | scikit-learn (baseline) + **XGBoost** + SHAP |
+| Causal | DiD escalonado por coorte (estilo Callaway–Sant'Anna), controle sintético de-meaned |
+| Feature store | Feast 0.66 — offline DuckDB, online Redis (ou SQLite) |
+| API | FastAPI + pydantic |
+| Dashboard | Streamlit + plotly |
+| CI/CD + monitoramento | GitHub Actions, PSI/KS, RMSE por ano |
 
-## Funcionalidades
+## Como rodar
 
-- **Ingestão idempotente** do World Bank API: um JSON bruto por indicador em
-  `data/bronze/worldbank/{code}.json`, retry com backoff exponencial, delay
-  anti rate-limit e log por indicador em `data/bronze/ingest_log.json`.
-- **Camada silver**: `worldbank_long.parquet` (long: país × ano × indicador,
-  tipado e padronizado) + `countries_dim.parquet` (dimensão país).
-- **Camada gold (ABT)**: `abt_country_year.parquet` — 1 linha por país × ano,
-  wide, com todos os indicadores unificados + `abt_quality.json`
-  (cobertura, missing, outliers).
-- **Proxy UHC** (`uhc_index`, 0..1): média ponderada de insumos (médicos,
-  enfermeiros, leitos, gasto por capita, saneamento/água, vacinação) com
-  normalização robusta por percentis (5/95) — o índice oficial só existe em
-  2019, então o proxy cobre o painel inteiro.
-- **Timing de tratamento p/ DiD**: `treated`, `treat_year`, `post` — primeiro
-  ano em que o país cruza o limiar do proxy UHC (default 0.5).
-- **3 modelos** com split **temporal** (evita leakage em painel):
-  - M1 `life_expectancy_reg` — expectativa de vida (regressão)
-  - M2 `child_mortality_reg` — mortalidade infantil <5 (regressão)
-  - M3 `milestone_high_clf` — marco de saúde alto: UHC ≥ 0.8 **e** LE ≥ 70 (classificação)
-  - Cada modelo: baseline ridge/linear + LightGBM, métricas (RMSE/MAE/R²;
-    AUC/F1), importância de features (SHAP com fallback p/ permutation) e
-    artefatos em `models/*.joblib` + `models/*_eval.json`.
-- **DuckDB catalogado**: `data/catalog.duckdb` com schemas `silver.*` e
-  `gold.*` apontando para os parquets (`src/utils/db.py`).
+Requer Python ≥ 3.11 (desenvolvido em 3.14). Docker só é necessário para o Redis.
 
-## Indicadores
+```bash
+make install            # .venv + requirements.txt
+cp .env.example .env    # opcional; ONLINE_STORE_TYPE=sqlite dispensa Redis
 
-Catálogo em [`config/indicators.yaml`](config/indicators.yaml) (códigos
-validados contra a API):
+make all                # ingest -> silver -> gold -> eda -> train -> abtest -> hypotheses -> drift
+make notebooks          # (re)executa os notebooks 01-05
+make test lint
+```
 
-| Grupo | Conteúdo |
-|---|---|
-| `targets` | expectativa de vida, mortalidade <5 |
-| `uhc_inputs` | gasto em saúde (capita/%GDP/público/OOP), médicos, enfermeiros, leitos, água/saneamento (básico e seguro), vacinas (sarampo, DPT) |
-| `uhc_official_2019` | SCI oficial (snapshot 2019, validação transversal) |
-| `covariates` | PIB/capita, urbanização, fertilidade, população |
+A ingestão completa leva ~3–5 min (a API do World Bank é lenta e tem rate limit; é
+idempotente — rode de novo e só o que falhou é rebaixado; veja `data/bronze/ingest_log.json`).
+Ingestão e checagens de qualidade saem com código ≠ 0 em falha, então `make`/CI param ali.
 
-## Estrutura do repositório
+### Serving
+
+```bash
+make redis-up                                  # ou: export ONLINE_STORE_TYPE=sqlite
+make feast-materialize                         # gold -> Feast offline -> online store
+make serve                                     # API em http://localhost:8000/docs
+make dashboard                                 # http://localhost:8501
+```
+
+```bash
+# features mais recentes do país (online store) + 3 predições com intervalo 90%
+curl -X POST localhost:8000/predict -H 'content-type: application/json' \
+     -d '{"country_id": "BRA"}'
+
+# cenário "e se": ano específico (ABT) + insumos alterados
+curl -X POST localhost:8000/predict -H 'content-type: application/json' \
+     -d '{"country_id": "NGA", "year": 2015, "overrides": {"sanitation_basic": 95}}'
+
+curl localhost:8000/experiments        # hipóteses + A/B + DiD
+```
+
+Sem online store disponível a API cai automaticamente para a ABT gold
+(`/health` mostra a fonte em uso).
+
+## Decisões de projeto
+
+- **Proxy UHC**: o SCI oficial só cobre 2000–2023. O proxy cobre 1990+, com
+  interpolação intra-país dos insumos estruturais (só no cálculo do índice; colunas da
+  ABT ficam cruas), log do gasto e média ponderada sobre os componentes disponíveis
+  (≥ 50% do peso).
+- **Timing do DiD**: primeiro ano ≥ 2000 em que o proxy cruza 0.5 de forma sustentada.
+  Antes de 2000 a composição do índice muda (séries de gasto/saneamento começam em 2000) e
+  geraria cruzamentos artificiais. Países que já começam acima são *always-treated* (fora);
+  controles *never-treated* precisam ter o proxy observado em ≥ 50% dos anos.
+- **Split temporal** (treino ≤ 2015, validação 2016–19 com early stopping, teste 2020–23) —
+  nunca aleatório num painel.
+- **M3 não usa `uhc_index` como feature** — o label é definido por ele.
+- **Intervalo de predição**: conformal split (quantil 90% do |resíduo| na validação); a API
+  devolve também a cobertura empírica medida no teste.
+- **Drift**: PSI/KS só em valores observados; mudança de cobertura (missing) é sinal
+  separado — senão séries que começam em 2000 pareceriam drift. Performance: RMSE por ano
+  (regressões) e AUC/Brier por ano (M3).
+- **Hipóteses robustas à especificação**: além do principal (FE país+ano), cada teste de painel
+  roda FE sem Europa/Ásia Central e FE sem efeito de ano; se uma delas inverte o sinal com
+  significância, o veredito é "inconclusiva". O pooled é reportado, mas mede outro estimando.
+- **Qualidade**: faixas físicas por indicador (percentuais em 0–100 etc.); valores extremos
+  reais de crises (LE de Ruanda 1994, mortalidade materna > 5000/100 mil) não são erro.
+- **Proxy UHC sem out-of-pocket**: testado invertido (proteção financeira) — correlação com o
+  SCI não melhora (0.913 → 0.907) porque o SCI mede cobertura de *serviços*.
+
+## Limitações
+
+- Associações dos modelos não são causais; os efeitos causais estão só em H5/notebook 05.
+- O "tratamento" do DiD é o cruzamento de um índice contínuo, não uma política discreta;
+  os nunca-tratados são estruturalmente mais pobres. O resultado é *ausência de efeito
+  detectável*, não prova de efeito nulo.
+- PIB em US$ correntes deriva com a inflação → trocar por `NY.GDP.PCAP.KD` (preços constantes).
+- Intervalo conformal absoluto: largo demais para países de baixa mortalidade.
+- A online store guarda a linha mais recente por país; features esparsas daquele ano
+  vêm vazias (consistente com o treino — o XGBoost lida com NaN).
+
+## Estrutura
 
 ```
-global-health-analytics/
-├── Makefile               # orquestracao (make help)
-├── config/
-│   ├── indicators.yaml    # catalogo de indicadores World Bank
-│   └── settings.py        # caminhos + variaveis de ambiente (.env)
+├── config/            indicators.yaml (catálogo WB + WHO), settings.py (.env)
 ├── src/
-│   ├── ingestion/worldbank.py   # API -> bronze
-│   ├── transform/               # bronze_to_silver, build_abt, quality
-│   ├── features/uhc_index.py    # proxy UHC + timing p/ DiD
-│   ├── modeling/                # dataset.py (split temporal), train.py (M1/M2/M3)
-│   ├── abtesting/               # (plano: A/B simulado + DiD)
-│   ├── serving/                 # (plano: Feast + FastAPI)
-│   ├── monitoring/              # (plano: drift PSI/KS)
-│   └── utils/                   # db.py (DuckDB), io.py
-├── data/                  # bronze/silver/gold + duckdb (gitignored)
-├── models/                # artefatos .joblib + eval (gitignored)
-└── tests/
+│   ├── ingestion/     worldbank.py, who_gho.py              -> bronze
+│   ├── transform/     bronze_to_silver.py, build_abt.py, quality.py
+│   ├── features/      uhc_index.py (proxy + timing DiD + validação vs SCI)
+│   ├── modeling/      dataset.py (split temporal), train.py (M1/M2/M3)
+│   ├── analysis/      eda.py, hypotheses.py (H1-H6)
+│   ├── abtesting/     simulate_ab.py, causal_did.py
+│   ├── serving/       feast_features.py, feast_cli.py, predictor.py, app.py (FastAPI)
+│   ├── monitoring/    drift.py
+│   ├── viz/           style.py (paleta validada p/ daltonismo)
+│   └── utils/         db.py (DuckDB), io.py
+├── notebooks/         build_notebooks.py -> 01..05.ipynb (executados)
+├── dashboard/         app.py (Streamlit)
+├── reports/           eda_summary.json, hypotheses.json, ab_simulation.json, causal_did.json, drift_report.json
+├── tests/             ingestão, transform, modelos, análise, API, drift, dashboard
+└── .github/workflows/ ci.yml (lint + testes + smoke), monitoring.yml (semanal)
 ```
-
-## Como usar
-
-Pré-requisitos: Python ≥ 3.11, Make. Docker só é necessário para o Redis
-(serving, ainda não implementado).
-
-```bash
-# 1. Setup
-make install                # cria .venv e instala requirements.txt
-cp .env.example .env        # ajuste se necessario
-
-# 2. Pipeline (ordem importa)
-make ingest                 # World Bank API -> bronze (~10+ min; rate-limited)
-make silver                 # bronze -> silver (long + dim país)
-make gold                   # silver -> gold (ABT + proxy UHC + labels)
-make train                  # treina M1/M2/M3 -> models/
-
-# Atalhos
-make abt                    # silver + gold (sem ingest)
-make all                    # ingest -> silver -> gold -> train -> abtest
-```
-
-### Ingestão
-
-```bash
-make ingest                                    # todos os indicadores
-.venv/bin/python -m src.ingestion.worldbank --codes SP.DYN.LE00.IN,SH.DYN.MORT
-.venv/bin/python -m src.ingestion.worldbank --force   # refaz tudo
-```
-
-- Idempotente: JSON existente em `data/bronze/worldbank/` é pulado (`--force` refaz).
-- O World Bank API é instável/rate-limited: delay de 0.6 s + backoff
-  exponencial (não remover). Rodada completa demora ~10+ min.
-- Consulte o status por indicador em `data/bronze/ingest_log.json`.
-- ⚠️ `SH_UHC_SCI` (snapshot 2019) **falha por design** na API v2 — é
-  esperado 1 erro por ingestão. O código oficial de série é `SH.UHC.NOEF`.
-
-### Consulta via DuckDB
-
-```python
-from src.utils.db import query, list_views
-
-list_views()
-query("SELECT country_name, year, uhc_index, life_expectancy \
-       FROM gold.abt_country_year WHERE year >= 2020 LIMIT 5")
-```
-
-### Modelos
-
-```bash
-make train
-# artefatos:
-#   models/life_expectancy_reg_lgbm.joblib  (+ _lin, _eval.json)
-#   models/child_mortality_reg_lgbm.joblib
-#   models/milestone_high_clf_lgbm.joblib
-#   models/all_eval.json  (relatório consolidado)
-```
-
-Split temporal fixo: train ≤ 2015, valid 2016–2019, test ≥ 2020
-(`src/modeling/dataset.py`).
-
-### Qualidade
-
-```bash
-make test                   # pytest
-make lint                   # ruff
-```
-
-### Limpeza
-
-```bash
-make clean                  # DESTRUTIVO: remove data/bronze|silver|gold, duckdb, models/
-```
-
-## Roadmap / status
-
-| Fase | Escopo | Status |
-|---|---|---|
-| F0–F1 | Setup + ingestão → bronze | ✅ |
-| F2 | Silver + gold (ABT + proxy UHC) | ✅ |
-| F6 | Modelos M1/M2/M3 (train/eval) | ✅ |
-| F3–F5 | EDA, visualizações, testes de hipótese (notebooks) | ❌ pendente |
-| F7 | A/B simulado + DiD causal (`src/abtesting/`) | ❌ pendente |
-| F8 | Feature store Feast (DuckDB/Redis) | ❌ pendente |
-| F9 | API FastAPI (`make serve`) | ❌ pendente |
-| F10 | Dashboard Streamlit (`make dashboard`) | ❌ pendente |
-| F11 | CI/CD + drift monitoring (`make drift`) | ❌ pendente |
-
-> Alvos `abtest`, `serve`, `feast-materialize`, `drift` e `dashboard` do
-> Makefile ainda não têm implementação — `make all` para no passo `abtest`.
-
-## Configuração (`.env`)
-
-Copie `.env.example` → `.env`. Principais variáveis:
-
-| Variável | Default | Descrição |
-|---|---|---|
-| `WB_API_BASE` / `WB_API_DELAY` / `WB_RETRIES` | api.worldbank.org / 0.6 / 4 | parâmetros da ingestão |
-| `DATA_DIR` / `MODELS_DIR` | `./data` / `./models` | caminhos de saída |
-| `REDIS_*` / `FEAST_*` | localhost:6379 / `.feast/registry` | serving (quando implementado) |
-| `DRIFT_PSI_THRESHOLD` / `DRIFT_KS_THRESHOLD` | 0.25 / 0.30 | alertas de drift (plano) |
-
-## Notas
-
-- Comentários/docstrings em pt-BR; ruff com line-length 100, first-party
-  `src` e `config`. Rode os módulos como `python -m src....` a partir da raiz.
-- O indicador infantil usa under-5 (`SH.DYN.MORT`): não existe série pública
-  confiável de mortalidade <1 ano no World Bank.

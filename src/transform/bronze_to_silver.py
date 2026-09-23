@@ -1,117 +1,134 @@
-"""Camada silver: parse dos JSONs raw (bronze) -> tabelas long estandardizadas.
+"""Camada silver: parse dos JSONs raw (bronze) -> tabelas long padronizadas.
+
+- Chave de pais = ISO3 (World Bank `countryiso3code` / WHO `SpatialDim`).
+- Agregados do World Bank (regioes, grupos de renda, "World") sao removidos: so paises.
+- WHO GHO: so linhas de pais, ambos os sexos (ou sem dimensao de sexo).
 
 Saidas:
-- data/silver/worldbank_long.parquet
-    country_id, country_name, iso_alpha3, region, income, year, indicator_code, value
+- data/silver/indicators_long.parquet
+    country_id (ISO3), year, indicator (nome logico), indicator_code, source, value
 - data/silver/countries_dim.parquet
-    country_id, country_name, iso_alpha3, region, income, latitude, longitude
+    country_id, country_name, iso2, region, income, latitude, longitude
 
 Uso: python -m src.transform.bronze_to_silver
 """
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pandas as pd
 
 from config import settings
+from src.ingestion.who_gho import who_indicators
+from src.ingestion.worldbank import COUNTRIES_FILE
+from src.utils.io import save_parquet
+
+AGGREGATE_REGION = "Aggregates"
 
 
-def _parse_records(code: str, raw: dict) -> pd.DataFrame:
-    """Extrai registros de um payload [metadata, records] -> DataFrame long."""
-    records = raw[1] if isinstance(raw, list) and len(raw) > 1 else []
-    if not records:
-        return pd.DataFrame()
+def parse_countries(raw: list) -> pd.DataFrame:
+    """Metadados de pais do WB -> dimensao (so paises, sem agregados)."""
     rows = []
-    for r in records:
-        if "value" not in r:  # payload de erro
+    for r in raw[1]:
+        region = (r.get("region") or {}).get("value", "").strip()
+        if region == AGGREGATE_REGION:
             continue
-        country = r.get("country") or {}
-        region = r.get("region") or {}
-        income = r.get("income") or {}
-        date = r.get("date")
-        val = r.get("value")
-        try:
-            year = int(date) if date is not None else None
-        except (TypeError, ValueError):
-            year = None
-        try:
-            value = float(val) if val is not None else None
-        except (TypeError, ValueError):
-            value = None
         rows.append({
-            "country_id": r.get("id"),
-            "country_name": country.get("value"),
-            "iso_alpha3": r.get("iso_alpha3"),
-            "region": region.get("value"),
-            "income": income.get("value"),
-            "year": year,
-            "indicator_code": code,
-            "value": value,
+            "country_id": r["id"],
+            "country_name": r.get("name"),
+            "iso2": r.get("iso2Code"),
+            "region": region or None,
+            "income": ((r.get("incomeLevel") or {}).get("value") or "").strip() or None,
+            "latitude": pd.to_numeric(r.get("latitude") or None, errors="coerce"),
+            "longitude": pd.to_numeric(r.get("longitude") or None, errors="coerce"),
         })
     return pd.DataFrame(rows)
 
 
-def load_bronze_long() -> pd.DataFrame:
-    wb_dir = settings.BRONZE_DIR / "worldbank"
+def parse_worldbank(code: str, name: str, raw: list) -> pd.DataFrame:
+    """Payload WB [metadata, records] -> long (inclui agregados; filtrados depois)."""
+    rows = [
+        {"country_id": r.get("countryiso3code") or None, "year": r.get("date"),
+         "value": r.get("value")}
+        for r in (raw[1] if isinstance(raw, list) and len(raw) > 1 else [])
+        if "value" in r
+    ]
+    df = pd.DataFrame(rows, columns=["country_id", "year", "value"])
+    df["indicator"] = name
+    df["indicator_code"] = code
+    df["source"] = "worldbank"
+    return df
+
+
+def parse_who(code: str, name: str, raw: dict) -> pd.DataFrame:
+    """Payload OData WHO -> long (paises, ambos os sexos)."""
+    rows = [
+        {"country_id": r.get("SpatialDim"), "year": r.get("TimeDim"),
+         "value": r.get("NumericValue")}
+        for r in raw.get("value", [])
+        if r.get("SpatialDimType") == "COUNTRY" and r.get("Dim1") in (None, "SEX_BTSX")
+    ]
+    df = pd.DataFrame(rows, columns=["country_id", "year", "value"])
+    df["indicator"] = name
+    df["indicator_code"] = code
+    df["source"] = "who_gho"
+    return df
+
+
+def load_bronze_long(cfg: dict) -> pd.DataFrame:
     frames = []
-    for path in sorted(wb_dir.glob("*.json")):
-        code = path.stem
-        try:
-            raw = json.loads(path.read_text())
-        except Exception:  # noqa: BLE001
-            print(f"  [aviso] nao consegui ler {path.name}, pulando")
-            continue
-        df = _parse_records(code, raw)
-        if not df.empty:
-            frames.append(df)
+    wb_dir = settings.BRONZE_DIR / "worldbank"
+    for name, code in settings.all_indicator_codes(cfg).items():
+        path = wb_dir / f"{code}.json"
+        if path.exists():
+            frames.append(parse_worldbank(code, name, json.loads(path.read_text())))
+        else:
+            print(f"  [aviso] bronze ausente: {path.name} (rode 'make ingest')")
+    who_dir = settings.BRONZE_DIR / "who"
+    for name, code in who_indicators(cfg).items():
+        path = who_dir / f"{code}.json"
+        if path.exists():
+            frames.append(parse_who(code, name, json.loads(path.read_text())))
     if not frames:
-        raise FileNotFoundError(f"nenhum dado bronze em {wb_dir}; rode 'make ingest'")
-    long_df = pd.concat(frames, ignore_index=True)
-    return long_df
+        raise FileNotFoundError(f"nenhum dado bronze em {settings.BRONZE_DIR}; rode 'make ingest'")
+    return pd.concat(frames, ignore_index=True)
 
 
-def build_countries_dim(long_df: pd.DataFrame) -> pd.DataFrame:
-    dim = (
-        long_df.dropna(subset=["country_id"])
-        .groupby("country_id", as_index=False)
-        .agg(
-            country_name=("country_name", "first"),
-            iso_alpha3=("iso_alpha3", "first"),
-            region=("region", "first"),
-            income=("income", "first"),
-        )
-    )
-    return dim.reset_index(drop=True)
+def to_silver(long_df: pd.DataFrame, dim: pd.DataFrame, start: int, end: int) -> pd.DataFrame:
+    """Tipagem, filtro de paises validos/periodo, remocao de nulos e duplicatas."""
+    df = long_df.copy()
+    df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
+    df["value"] = pd.to_numeric(df["value"], errors="coerce")
+    df = df[df["country_id"].isin(dim["country_id"])]
+    df = df[df["year"].between(start, end)]
+    df = df.dropna(subset=["year", "value"])
+    # WHO pode ter >1 linha por pais x ano (ex.: revisoes) -> media
+    df = (df.groupby(["country_id", "year", "indicator", "indicator_code", "source"],
+                     as_index=False)["value"].mean())
+    return df.sort_values(["indicator", "country_id", "year"]).reset_index(drop=True)
 
 
 def main() -> None:
     settings.ensure_dirs()
-    print("Carregando bronze (worldbank) -> silver ...")
-    long_df = load_bronze_long()
-    long_df["year"] = long_df["year"].astype("Int64")
-    long_df = long_df.dropna(subset=["year", "country_id", "indicator_code"])
+    cfg = settings.load_indicators()
+    start, end = settings.date_range(cfg)
+    print("Carregando bronze -> silver ...")
+    countries_path = settings.BRONZE_DIR / "worldbank" / COUNTRIES_FILE
+    if not countries_path.exists():
+        raise FileNotFoundError(f"{countries_path} ausente; rode 'make ingest'")
+    dim = parse_countries(json.loads(countries_path.read_text()))
+    long_df = to_silver(load_bronze_long(cfg), dim, start, end)
 
-    n_ind = long_df["indicator_code"].nunique()
-    n_cty = long_df["country_id"].nunique()
-    print(f"  rows={len(long_df):,} indicadores={n_ind} paises={n_cty} "
-          f"anos={long_df['year'].min()}..{long_df['year'].max()}")
-
-    from src.utils.io import save_parquet
-    out1 = save_parquet(long_df, "silver", "worldbank_long")
-    dim = build_countries_dim(long_df)
+    out1 = save_parquet(long_df, "silver", "indicators_long")
     out2 = save_parquet(dim, "silver", "countries_dim")
-    print(f"  -> {out1}")
-    print(f"  -> {out2} ({len(dim)} paises)")
+    print(f"  rows={len(long_df):,} indicadores={long_df['indicator'].nunique()} "
+          f"paises={long_df['country_id'].nunique()} anos={long_df['year'].min()}..{long_df['year'].max()}")
+    print(f"  -> {out1}\n  -> {out2} ({len(dim)} paises)")
 
-    # resumo por indicador
-    summary = (
-        long_df.groupby("indicator_code")
-        .agg(rows=("value", "size"), nonnull=("value", "count"),
-             paises=("country_id", "nunique"))
-        .reset_index()
-    )
+    summary = (long_df.groupby(["source", "indicator"])
+               .agg(rows=("value", "size"), paises=("country_id", "nunique"),
+                    ano_min=("year", "min"), ano_max=("year", "max"))
+               .reset_index())
     print("\nResumo por indicador:")
     print(summary.to_string(index=False))
 
