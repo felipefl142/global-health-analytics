@@ -89,16 +89,16 @@
     "efeito": -2.8584,
     "unidade": "anos de LE (efeito DiD)",
     "ic95": [
-      -3.7673,
-      -1.9494
+      -3.7672,
+      -1.9495
     ],
-    "p": 7.621949738023659e-10,
-    "n": 4933,
+    "p": 7.604699092667033e-10,
+    "n": 4921,
     "significativo": true,
     "significancia_pratica": true,
     "veredito": "rejeitada (sinal oposto)",
     "n_tratados": 110,
-    "n_controles": 62,
+    "n_controles": 61,
     "observacao": "Resultado negativo sugere convergencia: paises nunca tratados (mais pobres) ganharam LE mais rapido no periodo."
   },
   {

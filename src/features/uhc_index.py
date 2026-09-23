@@ -109,6 +109,25 @@ def compute_timing(idx: pd.DataFrame) -> pd.DataFrame:
     return idx
 
 
+def timing_por_pais(idx: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Timing do DiD no nivel do pais (aplicavel a todos os anos, nao so os observados).
+
+    `never_treated` exige o proxy observado em >= 50% dos anos do painel para servir
+    de controle confiavel.
+    """
+    idx = build_uhc_index() if idx is None else idx
+    grupos = idx.groupby("country_code")
+    timing = grupos.agg(
+        treat_year=("treat_year", "first"),
+        treated=("treated", "max"),
+        always_treated=("always_treated", "max"),
+    ).reset_index()
+    n_anos = idx["year"].max() - idx["year"].min() + 1
+    obs = grupos.size() / n_anos
+    timing["never_treated"] = (~timing["treated"]) & timing["country_code"].map(obs).ge(0.5)
+    return timing
+
+
 def build_uhc_index() -> pd.DataFrame:
     """Constroi o `uhc_index` por pais x ano e o timing do DiD."""
     wide = _carregar_insumos()
