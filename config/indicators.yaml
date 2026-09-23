@@ -1,0 +1,83 @@
+# Catalogo de indicadores (World Bank) - codigos validados contra a API oficial.
+# A ingestao valida cada codigo e loga em data/bronze/ingest_log.json.
+source: worldbank
+api_base: "https://api.worldbank.org/v2"
+date_range:
+  start: 1990
+  end: 2023
+per_page: 50000
+countries: "all"
+
+# ---- Alvos de predicao ----
+targets:
+  life_expectancy:            # M1 (regressao)
+    code: "SP.DYN.LE00.IN"
+    name: "Life expectancy at birth, total (years)"
+  child_mortality:            # M2 (regressao) - under-5 (proxy padrao p/ mortalidade infantil)
+    code: "SH.DYN.MORT"
+    name: "Mortality rate, under-5 (per 1,000 live births)"
+    note: "Indicador infantil (<1 ano) sem serie publica confiavel; under-5 e o outcome padrao."
+
+# ---- Insumos do sistema de saude (componentes do proxy UHC) ----
+uhc_inputs:
+  health_exp_per_capita:
+    code: "SH.XPD.CHEX.PC.CD"
+    name: "Current health expenditure per capita (current US$)"
+  health_exp_gdp:
+    code: "SH.XPD.CHEX.GD.ZS"
+    name: "Current health expenditure (% of GDP)"
+  public_health_exp_gdp:
+    code: "SH.XPD.GHED.GD.ZS"
+    name: "Domestic general government health expenditure (% of GDP)"
+  out_of_pocket:
+    code: "SH.XPD.OOPC.TO.ZS"
+    name: "Out-of-pocket health expenditure (% of total expenditure on health)"
+  doctors_per_1000:
+    code: "SH.MED.PHYS.ZS"
+    name: "Physicians (per 1,000 people)"
+  nurses_per_1000:
+    code: "SH.MED.NUMW.P3"
+    name: "Nurses and midwives (per 1,000 people)"
+  beds_per_1000:
+    code: "SH.MED.BEDS.ZS"
+    name: "Hospital beds (per 1,000 people)"
+  sanitation_basic:
+    code: "SH.STA.BASS.ZS"
+    name: "People using at least basic sanitation services (% of population)"
+  water_basic:
+    code: "SH.H2O.BASW.ZS"
+    name: "People using at least basic drinking water services (% of population)"
+  sanitation_safely:
+    code: "SH.STA.SMSS.ZS"
+    name: "People using safely managed sanitation services (% of population)"
+  water_safely:
+    code: "SH.H2O.SMDW.ZS"
+    name: "People using safely managed drinking water services (% of population)"
+  measles_imm_pct:
+    code: "SH.IMM.MEAS"
+    name: "Immunization, measles (% of children ages 12-23 months)"
+  dpt_imm_pct:
+    code: "SH.IMM.IDPT"
+    name: "Immunization, DPT (% of children ages 12-23 months)"
+
+# ---- UHC oficial (snapshot 2019, WHO/World Bank) ----
+uhc_official_2019:
+  uhc_sci:
+    code: "SH_UHC_SCI"
+    name: "UHC service coverage index (SCI)"
+    note: "Disponivel apenas em 2019 (snapshot) - usado p/ validacao transversal e feature."
+
+# ---- Covariados (confounders) ----
+covariates:
+  gdp_per_capita:
+    code: "NY.GDP.PCAP.CD"
+    name: "GDP per capita (current US$)"
+  urban_pct:
+    code: "SP.URB.TOTL.IN.ZS"
+    name: "Urban population (% of total population)"
+  fertility:
+    code: "SP.DYN.TFRT.IN"
+    name: "Fertility rate, total (births per woman)"
+  population:
+    code: "SP.POP.TOTL"
+    name: "Population, total"

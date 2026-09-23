@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Dados (gerados pelo pipeline) - nao versionar
+data/bronze/**
+data/silver/**
+data/gold/**
+data/*.duckdb
+data/*.db
+!data/**/.gitkeep
+
+# Modelos treinados
+models/*
+!models/.gitkeep
+
+# Feast
+.feast/
+registry.db
+
+# Ambiente
+.env
+*.duckdb.wal
+
+# IDE / SO
+.idea/
+.vscode/
+.DS_Store
+*.ipynb_checkpoints/
+
+# Logs / temp
+*.log
+nohup.out
+/tmp/
