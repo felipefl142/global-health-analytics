@@ -29,8 +29,11 @@ Medallion pipeline over World Bank global-health panel data (country × year, 19
 
 - bronze: raw API JSON, one file per indicator: `data/bronze/worldbank/{code}.json` (World Bank) e
   `data/bronze/who/{code}.json` (WHO GHO), com logs `ingest_log.json` / `ingest_log_who.json`.
-- silver: `data/silver/worldbank_long.parquet` (long: country × year × indicator) + `countries_dim.parquet`
-- gold: `data/gold/abt_country_year.parquet` — the ABT, 1 row per country × year, wide; plus `abt_quality.json` / `quality_checks.json`
+- silver: `data/silver/worldbank_long.parquet` + `who_long.parquet` (long: country × year ×
+  indicator) + `countries_dim.parquet` (região/renda/coordenadas, com flag `is_aggregate`)
+- gold: `data/gold/abt_country_year.parquet` — the ABT, 1 row per country × year, wide, já com
+  `uhc_index` + colunas de DiD (`treated`/`treat_year`/`post`); `uhc_index.parquet`; relatórios
+  `abt_quality.json` / `quality_checks.json`.
 - DuckDB: `src/utils/db.py` opens `data/catalog.duckdb` and exposes `silver.*` / `gold.*` views over the parquet files.
 - Indicator catalog: `config/indicators.yaml` (groups: targets, uhc_inputs, uhc_official, covariates, who_gho). All paths/config go through `config/settings.py`, which loads `.env` (copy `.env.example`).
 
