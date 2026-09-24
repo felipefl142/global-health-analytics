@@ -26,4 +26,8 @@ known-first-party = ["src", "config"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-filterwarnings = ["ignore::DeprecationWarning"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    # shap (import) chama Colormap.set_under/over/bad, depreciado no matplotlib >= 3.11
+    "ignore:The set_(under|over|bad) function:PendingDeprecationWarning",
+]
